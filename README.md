@@ -88,8 +88,3 @@ Because adding videos is so "expensive," **you can only process approximately 20
 ## 📝 License
 
 This project is open-source and available under the MIT License. Feel free to fork, modify, and improve it!
-
----
-
-**Next Steps:**
-Would you like me to walk you through how to properly set up that public "Template Google Sheet" so users can just click "Make a copy", or do you want to explore using the `clasp` command-line tool next?
