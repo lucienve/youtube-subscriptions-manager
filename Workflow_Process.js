@@ -18,7 +18,7 @@ function processSelectedVideos() {
   const historySheet = ss.getSheetByName('History');
 
   const playlistIds = refreshPlaylistConfig(settingsSheet);
-  
+
   const lastRow = videoSheet.getLastRow();
   if (lastRow < 2) {
     SpreadsheetApp.getUi().alert('No videos to process.');
@@ -28,17 +28,18 @@ function processSelectedVideos() {
   // Read 7 columns: [Dest, Thumb, Duration, Channel, Title, ID, Date]
   const range = videoSheet.getRange(2, 1, lastRow - 1, 7);
   const data = range.getValues();
-  
+
   let videosAdded = 0;
   let videosDiscarded = 0;
   let historyLog = [];
+  let rowsToDelete = [];
   let quotaHit = false;
 
   ss.toast('Processing videos...', 'Step 1/1');
 
-  // Loop backwards to safely delete rows
-  for (let i = data.length - 1; i >= 0; i--) {
-    
+  // Loop forwards to safely process in chronological order
+  for (let i = 0; i < data.length; i++) {
+
     // --- QUOTA BRAKE ---
     if (videosAdded >= 190) {
       quotaHit = true;
@@ -55,41 +56,50 @@ function processSelectedVideos() {
     if (choice && playlistIds[choice]) {
       try {
         addToPlaylist(playlistIds[choice], videoId);
-        
+
         historyLog.push([
           new Date(), channel, title, duration, choice
         ]);
 
-        videoSheet.deleteRow(i + 2); 
+        rowsToDelete.push(i + 2);
         videosAdded++;
       } catch (e) {
         console.error(`Failed to add: ${e.message}`);
         videoSheet.getRange(i + 2, 1).setNote(`Error: ${e.message}`);
       }
-    } 
+    }
     // Case 2: No Selection (Discard)
     else if (!choice || choice === '') {
       historyLog.push([
         new Date(), channel, title, duration, '_DISCARD_'
       ]);
-      
-      videoSheet.deleteRow(i + 2);
+
+      rowsToDelete.push(i + 2);
       videosDiscarded++;
     }
+
+    // --- PROGRESS TOAST ---
+    const processedCount = i + 1;
+    if (processedCount % 10 === 0) {
+      ss.toast(`Processed ${processedCount} of ${data.length} videos...`, 'Progress');
+    }
+  }
+
+  // Delete processed rows in reverse order to avoid shifting issues
+  for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+    videoSheet.deleteRow(rowsToDelete[i]);
   }
 
   // Write History Log
   if (historyLog.length > 0) {
     const startRow = historySheet.getLastRow() + 1;
-    // Reverse because we processed backwards, but want chronological order in history
-    historyLog.reverse(); 
     historySheet.getRange(startRow, 1, historyLog.length, 5).setValues(historyLog);
   }
 
   // --- AUTO-TRIM HISTORY ---
   const MAX_HISTORY_ROWS = 2000;
   const currentHistoryRows = historySheet.getLastRow();
-  
+
   if (currentHistoryRows > MAX_HISTORY_ROWS) {
     const rowsToDelete = currentHistoryRows - MAX_HISTORY_ROWS;
     // Delete oldest rows (after header)
@@ -99,7 +109,7 @@ function processSelectedVideos() {
 
   // Final Feedback
   let message = `Processing Complete.\n\nAdded: ${videosAdded}\nDiscarded: ${videosDiscarded}`;
-  
+
   if (quotaHit) {
     message += `\n\n⚠️ WARNING: DAILY QUOTA LIMIT REACHED (190 Adds).\nProcessing stopped to prevent a 24-hour API ban.\nPlease wait until tomorrow to process more.`;
     SpreadsheetApp.getUi().alert(message);
