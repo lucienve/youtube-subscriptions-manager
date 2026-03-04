@@ -21,14 +21,13 @@ Because this tool relies on a specific spreadsheet structure, the easiest way to
 
 ### Step 1: Copy the Spreadsheet
 
-1. Open the [Template Google Sheet](https://www.google.com/FIXME)
-2. Click **File > Make a copy** to save it to your personal Google Drive.
+1. Open the [Template Google Sheet](https://docs.google.com/spreadsheets/d/1vViZ_4MIZoRzacQDzLJWmu8a3gmoNdFvmgKgU_jBqwU/copy)
+2. Accept the prompts and save it to whatever location you desire on your Google Drive.
 
-### Step 2: Add the Code
+### Step 2: Update the Code with the latest versions from the repository
 
 1. In your new spreadsheet, click **Extensions > Apps Script**.
-2. Delete any default code in the editor.
-3. Create the following files and paste the code from this repository into them:
+2. Open the following files and paste the code from this repository into them:
 * `Main.gs`
 * `Workflow_Fetch.gs`
 * `Workflow_Process.gs`
