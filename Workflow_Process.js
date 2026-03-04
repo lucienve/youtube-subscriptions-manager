@@ -87,6 +87,10 @@ function processSelectedVideos() {
 
   // Delete processed rows in reverse order to avoid shifting issues
   for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+    // Prevent "cannot delete all non-frozen rows" error
+    if (videoSheet.getMaxRows() <= videoSheet.getFrozenRows() + 1) {
+      videoSheet.insertRowAfter(videoSheet.getMaxRows());
+    }
     videoSheet.deleteRow(rowsToDelete[i]);
   }
 
