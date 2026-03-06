@@ -17,10 +17,10 @@ function buildPredictionModel(ss) {
 
   // Data: [Date, Channel, Title, Duration, Playlist]
   const data = sheet.getRange(2, 2, lastRow - 1, 4).getValues();
-  
+
   const model = {
-    channelStats: {}, 
-    wordStats: {},    
+    channelStats: {},
+    channelWordStats: {},
     durationStats: {},
     playlists: new Set()
   };
@@ -45,12 +45,13 @@ function buildPredictionModel(ss) {
     if (!model.durationStats[bucket][playlist]) model.durationStats[bucket][playlist] = 0;
     model.durationStats[bucket][playlist]++;
 
-    // 3. Word Stats
+    // 3. Channel Word Stats
     const words = getKeywords(title);
     words.forEach(w => {
-      if (!model.wordStats[w]) model.wordStats[w] = {};
-      if (!model.wordStats[w][playlist]) model.wordStats[w][playlist] = 0;
-      model.wordStats[w][playlist]++;
+      if (!model.channelWordStats[channel]) model.channelWordStats[channel] = {};
+      if (!model.channelWordStats[channel][w]) model.channelWordStats[channel][w] = {};
+      if (!model.channelWordStats[channel][w][playlist]) model.channelWordStats[channel][w][playlist] = 0;
+      model.channelWordStats[channel][w][playlist]++;
     });
   });
 
@@ -95,9 +96,10 @@ function predictPlaylist(video, model) {
   }
 
   // 3. Title Keyword Score (Weight: 0.5 per word)
+  // Now tracks keywords internally per-channel.
   const words = getKeywords(video.title);
   words.forEach(w => {
-    const wStats = model.wordStats[w];
+    const wStats = model.channelWordStats[video.channel] ? model.channelWordStats[video.channel][w] : null;
     if (wStats) {
       const total = Object.values(wStats).reduce((a, b) => a + b, 0);
       for (const pl in wStats) {
@@ -125,7 +127,7 @@ function predictPlaylist(video, model) {
     }
     return bestPlaylist;
   }
-  
+
   return '';
 }
 
@@ -148,11 +150,11 @@ function getDurationBucket(duration) {
   if (typeof duration === 'string' && duration.includes(':')) {
     const parts = duration.split(':').map(Number);
     let seconds = 0;
-    if (parts.length === 3) seconds = parts[0]*3600 + parts[1]*60 + parts[2]; // H:M:S
-    else if (parts.length === 2) seconds = parts[0]*60 + parts[1]; // M:S
-    
+    if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2]; // H:M:S
+    else if (parts.length === 2) seconds = parts[0] * 60 + parts[1]; // M:S
+
     mins = seconds / 60;
-  } 
+  }
   // 3. Handle New Format (Decimal Number, e.g., 5.5)
   else {
     mins = parseFloat(duration);
@@ -178,6 +180,6 @@ function getKeywords(title) {
   const clean = title.toString().toLowerCase().replace(/[^\w\s]/g, '');
   const tokens = clean.split(/\s+/);
   // Basic Stopwords
-  const stopWords = new Set(['the','a','an','and','or','in','on','at','to','for','of','with','is','my','new','video','how','why']);
+  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'is', 'my', 'new', 'video', 'how', 'why']);
   return tokens.filter(t => t.length > 2 && !stopWords.has(t));
 }
