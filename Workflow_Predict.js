@@ -21,7 +21,7 @@ function buildPredictionModel(ss) {
   const model = {
     channelStats: {},
     channelWordStats: {},
-    durationStats: {},
+    channelDurationStats: {},
     playlists: new Set()
   };
 
@@ -39,11 +39,12 @@ function buildPredictionModel(ss) {
     if (!model.channelStats[channel][playlist]) model.channelStats[channel][playlist] = 0;
     model.channelStats[channel][playlist]++;
 
-    // 2. Duration Stats
+    // 2. Channel Duration Stats
     const bucket = getDurationBucket(duration);
-    if (!model.durationStats[bucket]) model.durationStats[bucket] = {};
-    if (!model.durationStats[bucket][playlist]) model.durationStats[bucket][playlist] = 0;
-    model.durationStats[bucket][playlist]++;
+    if (!model.channelDurationStats[channel]) model.channelDurationStats[channel] = {};
+    if (!model.channelDurationStats[channel][bucket]) model.channelDurationStats[channel][bucket] = {};
+    if (!model.channelDurationStats[channel][bucket][playlist]) model.channelDurationStats[channel][bucket][playlist] = 0;
+    model.channelDurationStats[channel][bucket][playlist]++;
 
     // 3. Channel Word Stats
     const words = getKeywords(title);
@@ -87,7 +88,7 @@ function predictPlaylist(video, model) {
 
   // 2. Duration Score (Weight: 1)
   const bucket = getDurationBucket(video.duration);
-  const dStats = model.durationStats[bucket];
+  const dStats = model.channelDurationStats[video.channel] ? model.channelDurationStats[video.channel][bucket] : null;
   if (dStats) {
     const total = Object.values(dStats).reduce((a, b) => a + b, 0);
     for (const pl in dStats) {
