@@ -58,7 +58,11 @@ function processSelectedVideos() {
         addToPlaylist(playlistIds[choice], videoId);
 
         historyLog.push([
-          new Date(), channel, title, duration, choice
+          new Date(),
+          escapeFormula(channel),
+          escapeFormula(title),
+          escapeFormula(duration),
+          escapeFormula(choice)
         ]);
 
         rowsToDelete.push(i + 2);
@@ -71,7 +75,11 @@ function processSelectedVideos() {
     // Case 2: No Selection (Discard)
     else if (!choice || choice === '') {
       historyLog.push([
-        new Date(), channel, title, duration, '_DISCARD_'
+        new Date(),
+        escapeFormula(channel),
+        escapeFormula(title),
+        escapeFormula(duration),
+        '_DISCARD_'
       ]);
 
       rowsToDelete.push(i + 2);
