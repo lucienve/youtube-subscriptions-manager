@@ -1,0 +1,4 @@
+## 2024-04-09 - CSV/Formula Injection Bypass via Whitespace
+**Vulnerability:** The existing `escapeFormula` function intended to prevent CSV/Formula injection by prefixing a single quote (`'`) to strings starting with `=`, `+`, `-`, or `@`. However, it did not account for leading whitespace or zero-width characters. An attacker could bypass the filter by supplying `  =IMPORTXML(...)` or `\u200B=CMD(...)`.
+**Learning:** Security regexes for formula injection prevention must consume/ignore any leading whitespace and special invisible spacing characters, because Google Sheets (and other spreadsheet tools) will trim them and execute the formula anyway.
+**Prevention:** Use a regex like `/^[\s\u200B\uFEFF\xA0]*[=+\-@]/` when checking strings to be written into Google Sheets, ensuring no leading characters can hide the dangerous prefix.

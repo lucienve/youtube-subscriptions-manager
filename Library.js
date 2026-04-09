@@ -130,7 +130,7 @@ function parseDuration(isoDuration) {
  * @return {any} - The escaped value.
  */
 function escapeFormula(value) {
-  if (typeof value === 'string' && /^[=+\-@]/.test(value)) {
+  if (typeof value === 'string' && /^[\s\u200B\uFEFF\xA0]*[=+\-@]/.test(value)) {
     return "'" + value;
   }
   return value;
