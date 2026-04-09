@@ -101,10 +101,16 @@ function checkNewVideos() {
                 });
               }
             }
-          } catch (e) { console.log('XML Error: ' + e.message); }
+          } catch (e) {
+            console.error('XML Error: ' + e.message);
+            ss.toast('Error parsing channel feed. Some videos may be skipped.', 'XML Error', 5);
+          }
         }
       });
-    } catch (e) { console.log('Batch Error: ' + e.message); }
+    } catch (e) {
+      console.error('Batch Error: ' + e.message);
+      ss.toast('Error fetching RSS feeds. Some channels may be skipped.', 'Batch Error', 5);
+    }
     Utilities.sleep(1000); 
   }
 
@@ -128,7 +134,10 @@ function checkNewVideos() {
           durationMap[item.id] = parseDuration(item.contentDetails.duration);
         });
       }
-    } catch (e) { console.log('API Error: ' + e.message); }
+    } catch (e) {
+      console.error('API Error: ' + e.message);
+      ss.toast('Error fetching video durations. Some details may be missing.', 'API Error', 5);
+    }
   }
 
   // --- APPLY PREDICTIONS ---
