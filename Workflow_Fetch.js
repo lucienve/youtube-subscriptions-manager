@@ -151,12 +151,12 @@ function checkNewVideos() {
   potentialVideos.sort((a, b) => a.date - b.date);
 
   const rows = potentialVideos.map(v => [
-    v.suggestion, 
+    escapeFormula(v.suggestion),
     v.thumb ? SpreadsheetApp.newCellImage().setSourceUrl(v.thumb).build() : '', 
-    v.duration, 
-    v.channel,  
-    v.title,    
-    v.id,       
+    escapeFormula(v.duration),
+    escapeFormula(v.channel),
+    escapeFormula(v.title),
+    escapeFormula(v.id),
     v.date      
   ]);
 

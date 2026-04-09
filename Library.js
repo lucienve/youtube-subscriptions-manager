@@ -122,3 +122,16 @@ function parseDuration(isoDuration) {
   // Return formatted to 2 decimal places (e.g., "1.25")
   return totalMinutes.toFixed(2);
 }
+/**
+ * Escapes a string to prevent formula injection in Google Sheets.
+ * If the string starts with =, +, -, or @, it prefixes it with a single quote.
+ *
+ * @param {any} value - The value to escape.
+ * @return {any} - The escaped value.
+ */
+function escapeFormula(value) {
+  if (typeof value === 'string' && /^[=+\-@]/.test(value)) {
+    return "'" + value;
+  }
+  return value;
+}
