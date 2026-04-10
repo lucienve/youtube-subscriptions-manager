@@ -15,7 +15,7 @@ function refreshPlaylistConfig(settingsSheet) {
   const range = settingsSheet.getRange(3, 1, lastRow - 2, 2);
   const data = range.getValues();
   
-  let map = {};
+  let map = Object.create(null);
   let missingIds = [];
 
   data.forEach((row, index) => {
@@ -32,7 +32,7 @@ function refreshPlaylistConfig(settingsSheet) {
 
   if (missingIds.length > 0) {
     SpreadsheetApp.getActiveSpreadsheet().toast('Looking up missing IDs...');
-    const myPlaylists = {};
+    const myPlaylists = Object.create(null);
     let pageToken = '';
     do {
       const response = YouTube.Playlists.list('snippet', {

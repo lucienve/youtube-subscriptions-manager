@@ -123,7 +123,7 @@ function checkNewVideos() {
   ss.toast(`Fetching details...`, 'Step 3/4');
   
   const videoIds = potentialVideos.map(v => v.id);
-  const durationMap = {};
+  const durationMap = Object.create(null);
   
   for (let i = 0; i < videoIds.length; i += 50) {
     const idBatch = videoIds.slice(i, i + 50).join(',');

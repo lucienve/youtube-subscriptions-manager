@@ -19,38 +19,38 @@ function buildPredictionModel(ss) {
   const data = sheet.getRange(2, 2, lastRow - 1, 4).getValues();
 
   const model = {
-    channelStats: {},
-    channelWordStats: {},
-    channelDurationStats: {},
+    channelStats: Object.create(null),
+    channelWordStats: Object.create(null),
+    channelDurationStats: Object.create(null),
     playlists: new Set()
   };
 
   data.forEach(row => {
-    const channel = row[0];
-    const title = row[1];
+    const channel = String(row[0]);
+    const title = String(row[1]);
     const duration = row[2];
-    const playlist = row[3];
+    const playlist = String(row[3]);
 
     if (!playlist) return;
     model.playlists.add(playlist);
 
     // 1. Channel Stats
-    if (!model.channelStats[channel]) model.channelStats[channel] = {};
+    if (!model.channelStats[channel]) model.channelStats[channel] = Object.create(null);
     if (!model.channelStats[channel][playlist]) model.channelStats[channel][playlist] = 0;
     model.channelStats[channel][playlist]++;
 
     // 2. Channel Duration Stats
     const bucket = getDurationBucket(duration);
-    if (!model.channelDurationStats[channel]) model.channelDurationStats[channel] = {};
-    if (!model.channelDurationStats[channel][bucket]) model.channelDurationStats[channel][bucket] = {};
+    if (!model.channelDurationStats[channel]) model.channelDurationStats[channel] = Object.create(null);
+    if (!model.channelDurationStats[channel][bucket]) model.channelDurationStats[channel][bucket] = Object.create(null);
     if (!model.channelDurationStats[channel][bucket][playlist]) model.channelDurationStats[channel][bucket][playlist] = 0;
     model.channelDurationStats[channel][bucket][playlist]++;
 
     // 3. Channel Word Stats
     const words = getKeywords(title);
     words.forEach(w => {
-      if (!model.channelWordStats[channel]) model.channelWordStats[channel] = {};
-      if (!model.channelWordStats[channel][w]) model.channelWordStats[channel][w] = {};
+      if (!model.channelWordStats[channel]) model.channelWordStats[channel] = Object.create(null);
+      if (!model.channelWordStats[channel][w]) model.channelWordStats[channel][w] = Object.create(null);
       if (!model.channelWordStats[channel][w][playlist]) model.channelWordStats[channel][w][playlist] = 0;
       model.channelWordStats[channel][w][playlist]++;
     });
@@ -72,7 +72,7 @@ function predictPlaylist(video, model) {
   if (!model) return '';
 
   const playlists = Array.from(model.playlists);
-  const scores = {};
+  const scores = Object.create(null);
 
   // Initialize scores
   playlists.forEach(p => scores[p] = 0);
