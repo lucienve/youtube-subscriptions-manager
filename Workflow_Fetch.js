@@ -67,49 +67,60 @@ function checkNewVideos() {
 
     try {
       const responses = UrlFetchApp.fetchAll(requests);
-      responses.forEach(response => {
-        if (response.getResponseCode() === 200) {
-          try {
-            const xml = XmlService.parse(response.getContentText());
-            const root = xml.getRootElement();
-            const entries = root.getChildren('entry', ns);
+      for (let j = 0; j < responses.length; j++) {
+        const response = responses[j];
 
-            for (const entry of entries) {
-              const publishedStr = entry.getChild('published', ns).getText();
-              const publishedDate = new Date(publishedStr);
-
-              if (publishedDate > lastRunDate) {
-                const videoId = entry.getChild('videoId', ytNs).getText();
-                const title = entry.getChild('title', ns).getText();
-                const channelName = entry.getChild('author', ns).getChild('name', ns).getText();
-                
-                let thumbUrl = '';
-                const group = entry.getChild('group', mediaNs);
-                if (group) {
-                  const thumb = group.getChild('thumbnail', mediaNs);
-                  if (thumb) thumbUrl = thumb.getAttribute('url').getValue();
-                }
-
-                potentialVideos.push({
-                  channel: channelName,
-                  title: title,
-                  id: videoId,
-                  date: publishedDate,
-                  thumb: thumbUrl,
-                  duration: '',
-                  suggestion: '' // For our AI guess
-                });
-              }
-            }
-          } catch (e) {
-            console.error('XML Error: ' + e.message);
-            ss.toast('Error parsing channel feed. Some videos may be skipped.', 'XML Error', 5);
-          }
+        if (response.getResponseCode() !== 200) {
+          const errMsg = `HTTP Error ${response.getResponseCode()} fetching feed for channel ${batch[j]}. Scan aborted.`;
+          console.error(errMsg);
+          SpreadsheetApp.getUi().alert('Fetch Error: ' + errMsg);
+          return;
         }
-      });
+
+        try {
+          const xml = XmlService.parse(response.getContentText());
+          const root = xml.getRootElement();
+          const entries = root.getChildren('entry', ns);
+
+          for (const entry of entries) {
+            const publishedStr = entry.getChild('published', ns).getText();
+            const publishedDate = new Date(publishedStr);
+
+            if (publishedDate > lastRunDate) {
+              const videoId = entry.getChild('videoId', ytNs).getText();
+              const title = entry.getChild('title', ns).getText();
+              const channelName = entry.getChild('author', ns).getChild('name', ns).getText();
+              
+              let thumbUrl = '';
+              const group = entry.getChild('group', mediaNs);
+              if (group) {
+                const thumb = group.getChild('thumbnail', mediaNs);
+                if (thumb) thumbUrl = thumb.getAttribute('url').getValue();
+              }
+
+              potentialVideos.push({
+                channel: channelName,
+                title: title,
+                id: videoId,
+                date: publishedDate,
+                thumb: thumbUrl,
+                duration: '',
+                suggestion: '' // For our AI guess
+              });
+            }
+          }
+        } catch (e) {
+          const errMsg = `XML Error parsing feed for channel ${batch[j]}: ${e.message}. Scan aborted.`;
+          console.error(errMsg);
+          SpreadsheetApp.getUi().alert('Fetch Error: ' + errMsg);
+          return;
+        }
+      }
     } catch (e) {
-      console.error('Batch Error: ' + e.message);
-      ss.toast('Error fetching RSS feeds. Some channels may be skipped.', 'Batch Error', 5);
+      const errMsg = `Network/Batch Error: ${e.message}. Scan aborted.`;
+      console.error(errMsg);
+      SpreadsheetApp.getUi().alert('Fetch Error: ' + errMsg);
+      return;
     }
     Utilities.sleep(1000); 
   }
