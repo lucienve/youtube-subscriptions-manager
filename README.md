@@ -56,9 +56,11 @@ To use the YouTube Data API to manage playlists and subscriptions, your Google A
 
 ## 📖 How to Use
 
-### 1. Configure Your Playlists
+### 1. Configure Settings
 
-Open the **Settings** tab in your spreadsheet. In Column A (starting at Row 3), type the exact names of the YouTube playlists you want to use (e.g., "Watch Later", "Podcasts", "To Sort"). *The script will automatically find their hidden IDs the first time it runs.*
+Open the **Settings** tab in your spreadsheet:
+* **Playlists:** In Column A (starting at Row 3), type the exact names of the YouTube playlists you want to use (e.g., "Watch Later", "Podcasts", "To Sort"). *The script will automatically find their hidden IDs the first time it runs.*
+* **Last Run Time:** In cell **B1**, you can specify a date to fetch videos from (format: `YYYY-MM-DD HH:MM:SS`). If left blank, the script will automatically default to fetching videos from exactly one week ago.
 
 ### 2. Fetch New Videos
 

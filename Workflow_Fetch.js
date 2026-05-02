@@ -35,8 +35,14 @@ function checkNewVideos() {
   let lastRunDate = new Date(lastRunStr);
   
   if (isNaN(lastRunDate.getTime())) {
-    SpreadsheetApp.getUi().alert('Invalid date in Settings!B1.');
-    return;
+    if (!lastRunStr || lastRunStr.toString().trim() === '') {
+      lastRunDate = new Date();
+      lastRunDate.setDate(lastRunDate.getDate() - 7);
+      ss.toast('B1 empty. Defaulting to fetching videos from the last 7 days.', 'First Run');
+    } else {
+      SpreadsheetApp.getUi().alert('Invalid date in Settings!B1. Please use a format like "YYYY-MM-DD HH:MM:SS" or leave it blank.');
+      return;
+    }
   }
 
   // 3. Get All Subscriptions
