@@ -1,1 +1,5 @@
 .clasp.json
+
+# Agent Rules
+.agents/rules/*
+!.agents/rules/youtube-subscriptions-manager.md
