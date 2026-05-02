@@ -34,8 +34,9 @@ Because this tool relies on a specific spreadsheet structure, the easiest way to
 * `Workflow_Predict.gs`
 * `Library.gs`
 
+*(Note: The source files in this repository end in `.js`, but within the Google Apps Script web editor, they must be created with `.gs` extensions. Just copy the contents of the corresponding `.js` files.)*
 
-4. **Important:** Click the **Save** icon (disk) at the top.
+3. **Important:** Click the **Save** icon (disk) at the top.
 
 ### Step 3: Enable the YouTube API
 
@@ -87,3 +88,19 @@ Because adding videos is so "expensive," **you can only process approximately 20
 ## 📝 License
 
 This project is open-source and available under the MIT License. Feel free to fork, modify, and improve it!
+
+---
+
+## 💻 Local Development & Contributing
+
+For developers who want to contribute to the codebase or run it locally:
+
+1. Clone the repository and install the Node.js dependencies:
+   ```bash
+   npm install
+   ```
+2. **Linting:** We enforce strict code quality using ESLint. Before submitting a pull request, ensure your code passes the linter:
+   ```bash
+   npm run lint
+   ```
+3. **Deployment:** Code is managed using `clasp`. Changes pushed to the `main` branch are automatically deployed via a GitHub Action.
