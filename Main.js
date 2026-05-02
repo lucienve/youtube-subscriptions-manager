@@ -1,4 +1,4 @@
-// Version: 1.1.1
+// Version: 1.1
 // Purpose: Configuration constants and Menu setup.
 
 // --- CONFIGURATION ---
