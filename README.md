@@ -32,7 +32,7 @@ To use the YouTube Data API to manage playlists and subscriptions, your Google A
 1. Open the [Template Google Sheet](https://docs.google.com/spreadsheets/d/1vViZ_4MIZoRzacQDzLJWmu8a3gmoNdFvmgKgU_jBqwU/copy)
 2. Accept the prompts and save it to whatever location you desire on your Google Drive.
 
-### Step 3: Update the Code with the latest versions from the repository
+### Step 3: For the future, update the code with the latest versions from the repository)
 
 1. In your new spreadsheet, click **Extensions > Apps Script**.
 2. Open the following files and paste the code from this repository into them:
@@ -40,9 +40,15 @@ To use the YouTube Data API to manage playlists and subscriptions, your Google A
 * `Workflow_Fetch.gs`
 * `Workflow_Process.gs`
 * `Workflow_Predict.gs`
+* `Workflow_Deduplicate.gs`
 * `Library.gs`
 
 *(Note: The source files in this repository end in `.js`, but within the Google Apps Script web editor, they must be created with `.gs` extensions. Just copy the contents of the corresponding `.js` files.)*
+
+3. **Important for UI:** You must also create an **HTML** file for the deduplication dialog:
+   * Click the **+** icon in the Apps Script editor and select **HTML**.
+   * Name it `Dialog_Deduplicate`.
+   * Paste the contents of `Dialog_Deduplicate.html` from this repository into it.
 
 3. **Important:** Click the **Save** icon (disk) at the top.
 
@@ -81,6 +87,11 @@ Go to the **Videos** tab. The script will highlight its AI suggestions in yellow
 Click **YouTube Tools > 2. Process Selected**.
 The script will move the videos to your YouTube playlists, log your choices to the **History** tab (to train the AI for next time), and clear your inbox.
 
+### 5. Clean Up Your Playlists (Optional)
+
+Over time, you might accidentally add the same video to a playlist more than once.
+Click **YouTube Tools > Remove Duplicates**. Select a playlist from the dropdown, and the script will find and remove any duplicate videos from that playlist.
+
 ---
 
 ## ⚠️ Known Limitations & Quotas
@@ -113,4 +124,4 @@ For developers who want to contribute to the codebase or run it locally:
    ```bash
    npm run lint
    ```
-3. **Deployment:** Code is managed using `clasp`. Changes pushed to the `main` branch are automatically deployed via a GitHub Action.
+3. **Deployment:** Code is managed using `clasp`. Changes pushed to the `main` branch are automatically deployed via a GitHub Action.  Make sure to set up the appropriate secrets for tokens, etc in the GitHub repo.
