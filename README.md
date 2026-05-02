@@ -19,12 +19,20 @@ Instead of relying on YouTube's default subscription feed, this tool pulls your 
 
 Because this tool relies on a specific spreadsheet structure, the easiest way to install it is to copy the template.
 
-### Step 1: Copy the Spreadsheet
+### Step 1: Ensure You Have a YouTube Channel
+
+To use the YouTube Data API to manage playlists and subscriptions, your Google Account must have an active YouTube channel linked to it. If you only have a standard Gmail account and have never created a channel, the API will fail to fetch your data.
+
+1. Go to [YouTube.com](https://www.youtube.com).
+2. Click your profile picture in the top right.
+3. Click **Create a channel** and follow the prompts. (You do not need to upload any videos).
+
+### Step 2: Copy the Spreadsheet
 
 1. Open the [Template Google Sheet](https://docs.google.com/spreadsheets/d/1vViZ_4MIZoRzacQDzLJWmu8a3gmoNdFvmgKgU_jBqwU/copy)
 2. Accept the prompts and save it to whatever location you desire on your Google Drive.
 
-### Step 2: Update the Code with the latest versions from the repository
+### Step 3: Update the Code with the latest versions from the repository
 
 1. In your new spreadsheet, click **Extensions > Apps Script**.
 2. Open the following files and paste the code from this repository into them:
@@ -38,7 +46,7 @@ Because this tool relies on a specific spreadsheet structure, the easiest way to
 
 3. **Important:** Click the **Save** icon (disk) at the top.
 
-### Step 3: Enable the YouTube API
+### Step 4: Enable the YouTube API
 
 1. Still in the Apps Script editor, look at the left sidebar and click the **+** next to **Services**.
 2. Scroll down and select **YouTube Data API v3**.

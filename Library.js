@@ -34,17 +34,26 @@ function refreshPlaylistConfig(settingsSheet) {
     SpreadsheetApp.getActiveSpreadsheet().toast('Looking up missing IDs...');
     const myPlaylists = {};
     let pageToken = '';
-    do {
-      const response = YouTube.Playlists.list('snippet', {
-        mine: true,
-        maxResults: 50,
-        pageToken: pageToken
-      });
-      response.items.forEach(pl => {
-        myPlaylists[pl.snippet.title] = pl.id;
-      });
-      pageToken = response.nextPageToken;
-    } while (pageToken);
+    try {
+      do {
+        const response = YouTube.Playlists.list('snippet', {
+          mine: true,
+          maxResults: 50,
+          pageToken: pageToken
+        });
+        response.items.forEach(pl => {
+          myPlaylists[pl.snippet.title] = pl.id;
+        });
+        pageToken = response.nextPageToken;
+      } while (pageToken);
+    } catch (e) {
+      if (e.message.includes('Channel not found') || e.message.includes('channelNotFound')) {
+        console.error('YouTube channel not found. Ensure the Google Account has a linked YouTube channel.');
+        SpreadsheetApp.getUi().alert('YouTube Channel Required: Your Google Account does not have an active YouTube channel. A channel is required to look up playlists. Please check the "Ensure You Have a YouTube Channel" section in the README for instructions, or enter Playlist IDs manually.');
+      } else {
+        console.error('Error fetching playlists: ' + e.message);
+      }
+    }
 
     missingIds.forEach(item => {
       const foundId = myPlaylists[item.name];
@@ -83,17 +92,27 @@ function addToPlaylist(playlistId, videoId) {
 function getAllSubscriptions() {
   let channels = [];
   let pageToken = '';
-  do {
-    const response = YouTube.Subscriptions.list('snippet', {
-      mine: true,
-      maxResults: 50,
-      pageToken: pageToken
-    });
-    if (response.items) {
-      response.items.forEach(item => channels.push(item.snippet.resourceId.channelId));
+  try {
+    do {
+      const response = YouTube.Subscriptions.list('snippet', {
+        mine: true,
+        maxResults: 50,
+        pageToken: pageToken
+      });
+      if (response.items) {
+        response.items.forEach(item => channels.push(item.snippet.resourceId.channelId));
+      }
+      pageToken = response.nextPageToken;
+    } while (pageToken);
+  } catch (e) {
+    if (e.message.includes('Channel not found') || e.message.includes('channelNotFound')) {
+      console.error('YouTube channel not found. Cannot fetch subscriptions.');
+      SpreadsheetApp.getUi().alert('YouTube Channel Required: Your Google Account does not have an active YouTube channel. A channel is required to fetch your subscriptions. Please check the "Ensure You Have a YouTube Channel" section in the README for instructions.');
+    } else {
+      console.error('Error fetching subscriptions: ' + e.message);
+      SpreadsheetApp.getUi().alert('Error fetching subscriptions: ' + e.message);
     }
-    pageToken = response.nextPageToken;
-  } while (pageToken);
+  }
   return channels;
 }
 
