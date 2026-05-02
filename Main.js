@@ -13,7 +13,7 @@ const SHEET_SETTINGS = 'Settings';
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('YouTube Tools')
-    .addItem('1. Check New Videos', 'checkNewVideos')
-    .addItem('2. Process Selected', 'processSelectedVideos')
+    .addItem('Check New Videos', 'checkNewVideos')
+    .addItem('Process Selected', 'processSelectedVideos')
     .addToUi();
 }
