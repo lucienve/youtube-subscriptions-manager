@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Push code using clasp
+      - name: Push code using clasp (Personal Project)
         uses: daikikatsuragawa/clasp-action@v1.2.0
         with:
           accessToken: ${{ secrets.ACCESS_TOKEN }}
@@ -25,4 +25,18 @@ jobs:
           clientId: ${{ secrets.CLIENT_ID }}
           clientSecret: ${{ secrets.CLIENT_SECRET }}
           scriptId: ${{ secrets.SCRIPT_ID }}
+          command: 'push'
+
+      - name: Push code using clasp (Template Project)
+        if: ${{ env.TEMPLATE_SCRIPT_ID != '' }}
+        env:
+          TEMPLATE_SCRIPT_ID: ${{ secrets.TEMPLATE_SCRIPT_ID }}
+        uses: daikikatsuragawa/clasp-action@v1.2.0
+        with:
+          accessToken: ${{ secrets.ACCESS_TOKEN }}
+          idToken: ${{ secrets.ID_TOKEN }}
+          refreshToken: ${{ secrets.REFRESH_TOKEN }}
+          clientId: ${{ secrets.CLIENT_ID }}
+          clientSecret: ${{ secrets.CLIENT_SECRET }}
+          scriptId: ${{ secrets.TEMPLATE_SCRIPT_ID }}
           command: 'push'
