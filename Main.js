@@ -15,5 +15,6 @@ function onOpen() {
   ui.createMenu('YouTube Tools')
     .addItem('Check New Videos', 'checkNewVideos')
     .addItem('Process Selected', 'processSelectedVideos')
+    .addItem('Remove Duplicates', 'showDeduplicateDialog')
     .addToUi();
 }

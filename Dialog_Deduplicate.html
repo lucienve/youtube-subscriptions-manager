@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f8f9fa;
+        color: #333;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #1a73e8;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        background-color: #1557b0;
+      }
+      button:disabled {
+        background-color: #a0c1f0;
+        cursor: not-allowed;
+      }
+      #status {
+        margin-top: 15px;
+        font-size: 14px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-group">
+      <label for="playlistSelect">Select Playlist:</label>
+      <select id="playlistSelect">
+        <option value="">Loading playlists...</option>
+      </select>
+    </div>
+    <button id="submitBtn" onclick="submitDeduplicate()" disabled>Remove Duplicates</button>
+    <div id="status"></div>
+
+    <script>
+      function populateDropdown(playlistNames) {
+        const select = document.getElementById('playlistSelect');
+        const btn = document.getElementById('submitBtn');
+        select.innerHTML = ''; // Clear loading option
+        
+        if (!playlistNames || playlistNames.length === 0) {
+           const option = document.createElement('option');
+           option.text = 'No playlists found in Settings tab';
+           option.value = '';
+           select.add(option);
+           return;
+        }
+
+        playlistNames.forEach(name => {
+          const option = document.createElement('option');
+          option.text = name;
+          option.value = name;
+          select.add(option);
+        });
+        
+        btn.disabled = false;
+      }
+
+      function submitDeduplicate() {
+        const select = document.getElementById('playlistSelect');
+        const selectedName = select.options[select.selectedIndex].value;
+        
+        if (!selectedName) return;
+        
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        
+        btn.disabled = true;
+        status.textContent = 'Processing... You can close this dialog, check the notification in the sheet for results.';
+        
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .withFailureHandler(function(error) {
+            status.textContent = 'Error: ' + error.message;
+            status.style.color = 'red';
+            btn.disabled = false;
+          })
+          .deduplicatePlaylist(selectedName);
+      }
+
+      // Automatically load playlists when dialog opens
+      google.script.run
+        .withSuccessHandler(populateDropdown)
+        .withFailureHandler(function(error) {
+          document.getElementById('status').textContent = 'Error loading playlists: ' + error.message;
+          document.getElementById('status').style.color = 'red';
+        })
+        .getPlaylistNames();
+    </script>
+  </body>
+</html>
