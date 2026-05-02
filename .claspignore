@@ -1,11 +1,11 @@
-.git/
+.git/**
+.github/**
+node_modules/**
+tests/**
+.agents/**
+.jules/**
 .gitignore
-.github/
 README.md
 eslint.config.js
 package.json
 package-lock.json
-node_modules/
-tests/
-.agents/
-.jules/
