@@ -187,3 +187,7 @@ function getKeywords(title) {
   const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'is', 'my', 'new', 'video', 'how', 'why']);
   return tokens.filter(t => t.length > 2 && !stopWords.has(t));
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = { getKeywords, getDurationBucket, predictPlaylist };
+}

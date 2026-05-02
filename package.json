@@ -4,7 +4,7 @@
   "description": "A Google Sheets and Google Apps Script tool that transforms how you manage your YouTube subscriptions.",
   "main": "Library.js",
   "scripts": {
-    "test": "echo 'No tests configured yet' && exit 0",
+    "test": "jest",
     "lint": "eslint ."
   },
   "repository": {
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.3.0",
-    "eslint-plugin-googleappsscript": "^1.0.5"
+    "eslint-plugin-googleappsscript": "^1.0.5",
+    "jest": "^30.3.0"
   }
 }

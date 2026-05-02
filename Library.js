@@ -135,3 +135,7 @@ function escapeFormula(value) {
   }
   return value;
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = { parseDuration, escapeFormula };
+}

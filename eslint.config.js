@@ -19,7 +19,12 @@ module.exports = [
         parseDuration: "readonly",
         predictPlaylist: "readonly",
         escapeFormula: "readonly",
-        addToPlaylist: "readonly"
+        addToPlaylist: "readonly",
+        module: "readonly",
+        require: "readonly",
+        describe: "readonly",
+        it: "readonly",
+        expect: "readonly"
       }
     },
     plugins: {

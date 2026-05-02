@@ -20,3 +20,4 @@ Ensure all code and syntax is explicitly compatible with the following environme
 
 ## 3. Verification & Testing
 - **Linting:** You must run `npm run lint` to verify your changes. Address any warnings or errors before marking tasks as complete.
+- **Unit Tests:** You must run `npm run test` to verify pure logic changes. Ensure all tests pass.
