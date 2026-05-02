@@ -148,7 +148,7 @@ function getDurationBucket(duration) {
   // 1. Handle "LIVE" or empty
   if (!duration || duration === 'LIVE/UPCOMING') return 'long';
 
-  let mins = 0;
+  let mins;
 
   // 2. Check for Old Format (String with Colon, e.g., "5:30")
   if (typeof duration === 'string' && duration.includes(':')) {

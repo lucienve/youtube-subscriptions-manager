@@ -3,3 +3,5 @@
 # Agent Rules
 .agents/rules/*
 !.agents/rules/youtube-subscriptions-manager.md
+
+node_modules/

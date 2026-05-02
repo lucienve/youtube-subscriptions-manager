@@ -1,0 +1,26 @@
+{
+  "name": "youtube-subscriptions-manager",
+  "version": "1.0.0",
+  "description": "A Google Sheets and Google Apps Script tool that transforms how you manage your YouTube subscriptions.",
+  "main": "Library.js",
+  "scripts": {
+    "test": "echo 'No tests configured yet' && exit 0",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucienve/youtube-subscriptions-manager.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lucienve/youtube-subscriptions-manager/issues"
+  },
+  "homepage": "https://github.com/lucienve/youtube-subscriptions-manager#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-googleappsscript": "^1.0.5"
+  }
+}

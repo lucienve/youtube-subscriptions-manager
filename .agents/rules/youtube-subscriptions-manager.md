@@ -17,3 +17,6 @@ Ensure all code and syntax is explicitly compatible with the following environme
 - **Privacy & External Services:** The tool must run entirely inside a user's personal Google Drive. Do not integrate external servers or third-party APIs (especially for machine learning).
 - **Performance:** Keep processing logic, especially the prediction model, lightweight and fast to avoid hitting the Google Apps Script 6-minute execution timeout.
 - **Clasp & File Extensions:** Code is developed locally as `.js` files and managed via `clasp`, which converts them to `.gs` files in the Google Apps Script environment. Keep local files as `.js`.
+
+## 3. Verification & Testing
+- **Linting:** You must run `npm run lint` to verify your changes. Address any warnings or errors before marking tasks as complete.
