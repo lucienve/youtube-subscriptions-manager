@@ -1,12 +1,16 @@
 name: Deploy to Google Apps Script
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Lint"]
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -21,4 +25,4 @@ jobs:
           clientId: ${{ secrets.CLIENT_ID }}
           clientSecret: ${{ secrets.CLIENT_SECRET }}
           scriptId: ${{ secrets.SCRIPT_ID }}
-          command: 'push -f'
+          command: 'push'
