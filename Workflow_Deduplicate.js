@@ -56,25 +56,34 @@ function deduplicatePlaylist(playlistName) {
   
   // 1. Fetch all items and identify duplicates
   do {
-    const response = YouTube.PlaylistItems.list('snippet', {
-      playlistId: playlistId,
-      maxResults: 50,
-      pageToken: pageToken
-    });
-    
-    if (response.items) {
-      response.items.forEach(item => {
-        const videoId = item.snippet.resourceId.videoId;
-        // If we have seen it before, mark this specific playlist item for deletion
-        if (seenVideoIds.has(videoId)) {
-          toDelete.push(item.id); 
-        } else {
-          // First time seeing this video, keep it
-          seenVideoIds.add(videoId);
-        }
+    try {
+      const response = YouTube.PlaylistItems.list('snippet', {
+        playlistId: playlistId,
+        maxResults: 50,
+        pageToken: pageToken
       });
+
+      if (response && response.items) {
+        response.items.forEach(item => {
+          const videoId = item.snippet.resourceId.videoId;
+          // If we have seen it before, mark this specific playlist item for deletion
+          if (seenVideoIds.has(videoId)) {
+            toDelete.push(item.id);
+          } else {
+            // First time seeing this video, keep it
+            seenVideoIds.add(videoId);
+          }
+        });
+      }
+      pageToken = response ? response.nextPageToken : null;
+    } catch (e) {
+      console.error(`Failed to list items for deduplication: ${e.message}`);
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+          `Error fetching playlist items: ${e.message}`,
+          'API Error'
+      );
+      break;
     }
-    pageToken = response.nextPageToken;
   } while (pageToken);
 
   // 2. Report if no duplicates

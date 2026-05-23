@@ -80,7 +80,12 @@ function addToPlaylist(playlistId, videoId) {
       resourceId: { kind: 'youtube#video', videoId: videoId }
     }
   };
-  YouTube.PlaylistItems.insert(resource, 'snippet');
+  try {
+    YouTube.PlaylistItems.insert(resource, 'snippet');
+  } catch (e) {
+    console.error(`Failed to add video ${videoId} to playlist ${playlistId}: ${e.message}`);
+    throw new Error(`Playlist insertion failed: ${e.message}`, {cause: e});
+  }
 }
 
 /**
