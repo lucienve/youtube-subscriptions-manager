@@ -124,4 +124,7 @@ function processSelectedVideos() {
   } else {
     ss.toast(message, 'Done', 5);
   }
+
+  // Reset starting cell for keyboard-only navigation
+  videoSheet.getRange('A2').activate();
 }
