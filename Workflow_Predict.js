@@ -26,12 +26,11 @@ function buildPredictionModel(ss) {
     playlists: new Set()
   };
 
-  data.forEach(row => {
+  data.forEach(([channelRaw, titleRaw, duration, playlistRaw]) => {
     // Cast to string to ensure safe object keys
-    const channel = String(row[0]);
-    const title = String(row[1]);
-    const duration = row[2];
-    const playlist = String(row[3]);
+    const channel = String(channelRaw);
+    const title = String(titleRaw);
+    const playlist = String(playlistRaw);
 
     if (!playlist || playlist === "undefined") return;
     model.playlists.add(playlist);

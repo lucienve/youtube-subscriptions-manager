@@ -46,11 +46,7 @@ function processSelectedVideos() {
       break; // Stop immediately to prevent API ban
     }
 
-    const choice = data[i][0];   // Col A
-    const duration = data[i][2]; // Col C
-    const channel = data[i][3];  // Col D
-    const title = data[i][4];    // Col E
-    const videoId = data[i][5];  // Col F
+    const [choice, , duration, channel, title, videoId] = data[i];
 
     // Case 1: Playlist Selected
     if (choice && playlistIds[choice]) {

@@ -18,9 +18,7 @@ function refreshPlaylistConfig(settingsSheet) {
   let map = {};
   let missingIds = [];
 
-  data.forEach((row, index) => {
-    const name = row[0];
-    const id = row[1];
+  data.forEach(([name, id], index) => {
     if (name && name !== '') {
       if (id && id !== '') {
         map[name] = id;
