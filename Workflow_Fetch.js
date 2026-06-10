@@ -31,16 +31,16 @@ function checkNewVideos() {
   const model = buildPredictionModel(ss);
 
   // 2. Get Last Run Time
-  let lastRunStr = settingsSheet.getRange('B1').getValue();
+  let lastRunStr = getSettingValue(settingsSheet, 'Last Run Time');
   let lastRunDate = new Date(lastRunStr);
   
   if (isNaN(lastRunDate.getTime())) {
     if (!lastRunStr || lastRunStr.toString().trim() === '') {
       lastRunDate = new Date();
       lastRunDate.setDate(lastRunDate.getDate() - 7);
-      ss.toast('B1 empty. Defaulting to fetching videos from the last 7 days.', 'First Run');
+      ss.toast('\'Last Run Time\' empty. Defaulting to fetching videos from the last 7 days.', 'First Run');
     } else {
-      SpreadsheetApp.getUi().alert('Invalid date in Settings!B1. Please use a format like "YYYY-MM-DD HH:MM:SS" or leave it blank.');
+      SpreadsheetApp.getUi().alert('Invalid date in Settings for \'Last Run Time\'. Please use a format like "YYYY-MM-DD HH:MM:SS" or leave it blank.');
       return;
     }
   }
@@ -54,7 +54,7 @@ function checkNewVideos() {
   }
 
   // --- SUBSCRIPTION GUARDRAIL ---
-  const lastSubCountVal = settingsSheet.getRange('B2').getValue();
+  const lastSubCountVal = getSettingValue(settingsSheet, 'Last Subscription Count');
   const lastSubCount = parseInt(lastSubCountVal, 10);
   if (!isNaN(lastSubCount) && lastSubCountVal !== '') {
     const subDiff = Math.abs(channels.length - lastSubCount);
@@ -151,11 +151,7 @@ function checkNewVideos() {
   }
 
   if (potentialVideos.length === 0) {
-    const labelRange = settingsSheet.getRange('A2');
-    if (labelRange.getValue() === '') {
-      labelRange.setValue('Last Subscription Count');
-    }
-    settingsSheet.getRange('B2').setValue(channels.length);
+    setSettingValue(settingsSheet, 'Last Subscription Count', channels.length);
     ss.toast('No new videos found.', 'Complete', 5);
     return;
   }
@@ -224,13 +220,8 @@ function checkNewVideos() {
   videoSheet.setRowHeights(startRow, rows.length, 95);
 
   const newestDate = potentialVideos[potentialVideos.length - 1].date;
-  settingsSheet.getRange('B1').setValue(Utilities.formatDate(newestDate, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss"));
-  
-  const labelRange = settingsSheet.getRange('A2');
-  if (labelRange.getValue() === '') {
-    labelRange.setValue('Last Subscription Count');
-  }
-  settingsSheet.getRange('B2').setValue(channels.length);
+  setSettingValue(settingsSheet, 'Last Run Time', Utilities.formatDate(newestDate, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss"));
+  setSettingValue(settingsSheet, 'Last Subscription Count', channels.length);
   
   ss.toast(`Done! Found ${potentialVideos.length} new videos.`, 'Complete', 5);
 

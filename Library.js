@@ -10,23 +10,40 @@
  */
 function refreshPlaylistConfig(settingsSheet) {
   const lastRow = settingsSheet.getLastRow();
-  if (lastRow < 4) return {};
+  if (lastRow < 1) return {};
 
-  const range = settingsSheet.getRange(4, 1, lastRow - 3, 2);
-  const data = range.getValues();
-  
+  // Fetch all rows in column A & B
+  const data = settingsSheet.getRange(1, 1, lastRow, 2).getValues();
+
+  let headerIndex = -1;
+  for (let i = 0; i < data.length; i++) {
+    const colA = String(data[i][0]).trim();
+    const colB = String(data[i][1]).trim();
+    if (colA === 'Playlist Name' && colB === 'Playlist ID') {
+      headerIndex = i;
+      break;
+    }
+  }
+
+  if (headerIndex === -1) {
+    SpreadsheetApp.getUi().alert('Could not find "Playlist Name" and "Playlist ID" headers in Columns A & B of the Settings sheet.');
+    return {};
+  }
+
   let map = {};
   let missingIds = [];
 
-  data.forEach(([name, id], index) => {
+  for (let i = headerIndex + 1; i < data.length; i++) {
+    const name = data[i][0];
+    const id = data[i][1];
     if (name && name !== '') {
       if (id && id !== '') {
         map[name] = id;
       } else {
-        missingIds.push({ name: name, rowIndex: index + 4 });
+        missingIds.push({ name: name, rowIndex: i + 1 });
       }
     }
-  });
+  }
 
   if (missingIds.length > 0) {
     SpreadsheetApp.getActiveSpreadsheet().toast('Looking up missing IDs...');
@@ -158,6 +175,71 @@ function escapeFormula(value) {
   return value;
 }
 
+/**
+ * Retrieves a setting value from Column B by matching its label in Column A.
+ *
+ * @param {Sheet} settingsSheet - The 'Settings' sheet object.
+ * @param {string} label - The setting label to look for.
+ * @return {any} - The setting value, or empty string if not found.
+ */
+function getSettingValue(settingsSheet, label) {
+  const lastRow = settingsSheet.getLastRow();
+  if (lastRow < 1) return '';
+  const data = settingsSheet.getRange(1, 1, lastRow, 1).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0]).trim().toLowerCase() === label.toLowerCase()) {
+      return settingsSheet.getRange(i + 1, 2).getValue();
+    }
+  }
+  return '';
+}
+
+/**
+ * Sets a setting value in Column B by matching its label in Column A.
+ * If the setting label is not found, it inserts a new row immediately above 
+ * the playlist table headers and writes the setting there.
+ *
+ * @param {Sheet} settingsSheet - The 'Settings' sheet object.
+ * @param {string} label - The setting label.
+ * @param {any} value - The value to store.
+ * @return {void}
+ */
+function setSettingValue(settingsSheet, label, value) {
+  const lastRow = settingsSheet.getLastRow();
+  if (lastRow >= 1) {
+    const data = settingsSheet.getRange(1, 1, lastRow, 2).getValues();
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim().toLowerCase() === label.toLowerCase()) {
+        settingsSheet.getRange(i + 1, 2).setValue(value);
+        return;
+      }
+    }
+  }
+
+  // If not found, find "Playlist Name" header to insert above it
+  let headerRow = -1;
+  if (lastRow >= 1) {
+    const data = settingsSheet.getRange(1, 1, lastRow, 2).getValues();
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim() === 'Playlist Name' && String(data[i][1]).trim() === 'Playlist ID') {
+        headerRow = i + 1;
+        break;
+      }
+    }
+  }
+
+  if (headerRow !== -1) {
+    settingsSheet.insertRowBefore(headerRow);
+    settingsSheet.getRange(headerRow, 1).setValue(label);
+    settingsSheet.getRange(headerRow, 2).setValue(value);
+  } else {
+    // Fallback: If no playlist headers found, just append to the end
+    const nextRow = Math.max(1, lastRow + 1);
+    settingsSheet.getRange(nextRow, 1).setValue(label);
+    settingsSheet.getRange(nextRow, 2).setValue(value);
+  }
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { parseDuration, escapeFormula };
+  module.exports = { parseDuration, escapeFormula, getSettingValue, setSettingValue };
 }

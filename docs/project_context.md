@@ -18,7 +18,7 @@ It uses Google Sheets as a UI and database, fetching new videos from subscriptio
 - **Local Development:** Project is managed locally using clasp, allowing the use of ESLint and Jest for testing pure functions.
 - **Deduplication Dialog:** Uses `HtmlService` (`Dialog_Deduplicate.html`) for the deduplication feature to provide a clean, reliable user selection dropdown that queries the latest configured playlists dynamically.
 - **Subscription Guardrail Pre-check:** The guardrail is evaluated immediately after fetching the subscription list, preventing any RSS feed scans, video duration lookups, or sheet modifications if the user aborts.
-- **Subscription Count Storage & Layout:** The last run's subscription count is stored in cell `Settings!B2` (label in `Settings!A2`). The playlist table header has been shifted to Row 3, and playlist configuration data starts at Row 4.
+- **Subscription Settings & Layout:** The Settings sheet parsing is completely dynamic and label-driven. Parameters like `"Last Run Time"` and `"Last Subscription Count"` are looked up by scanning Column A for their labels. If a setting is missing, it is automatically inserted right above the `"Playlist Name"` / `"Playlist ID"` headers. The playlist configuration table itself is located by searching Columns A and B for the headers, with all config rows parsed directly below them. This makes the layout completely robust to row insertions, additions, or re-ordering.
 
 ## Future Plans
 - Continued monitoring of quota usage.

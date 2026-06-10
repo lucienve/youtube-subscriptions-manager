@@ -20,11 +20,15 @@ module.exports = [
         predictPlaylist: "readonly",
         escapeFormula: "readonly",
         addToPlaylist: "readonly",
+        getSettingValue: "readonly",
+        setSettingValue: "readonly",
         module: "readonly",
         require: "readonly",
         describe: "readonly",
         it: "readonly",
-        expect: "readonly"
+        expect: "readonly",
+        beforeEach: "readonly",
+        jest: "readonly"
       }
     },
     plugins: {
