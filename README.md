@@ -64,10 +64,11 @@ To use the YouTube Data API to manage playlists and subscriptions, your Google A
 
 ### 1. Configure Settings
 
-Open the **Settings** tab in your spreadsheet:
-* **Playlists:** In Column A (starting at Row 3), type the exact names of the YouTube playlists you want to use (e.g., "Watch Later", "Podcasts", "To Sort"). *The script will automatically find their hidden IDs the first time it runs.*
-* **Last Run Time:** In Column B, you can specify a date to fetch videos from (format: `YYYY-MM-DD HH:MM:SS`). If left blank, the script will automatically default to fetching videos from exactly one week ago.
-* **Prediction Weights (Optional):** Controls the relative weights of the AI prediction model factors (in Column B). If these settings do not exist yet, the script will automatically initialize them on the first run:
+Open the **Settings** tab in your spreadsheet. All settings are dynamically parsed by looking up their labels in Column A:
+* **Playlists:** Located by searching Columns A and B for the table headers `"Playlist Name"` and `"Playlist ID"`. Beneath these headers, type the exact names of the YouTube playlists you want to use (e.g., "Watch Later", "Podcasts"). *The script automatically finds and saves their hidden IDs the first time it runs.*
+* **Last Run Time:** Specifies the date/time threshold to fetch videos from (format: `YYYY-MM-DD HH:MM:SS` in Column B). If left blank, the script defaults to fetching videos from exactly one week ago.
+* **Last Subscription Count (Automatic):** Stores the number of subscriptions from the last successful run. This acts as a safety guardrail baseline: if a subsequent fetch returns a count that differs by more than 10, the script prompts you for confirmation before proceeding to prevent silent API failures.
+* **Prediction Weights (Optional):** Controls the relative weights of the AI prediction model factors (in Column B). If these settings do not exist yet, the script automatically initializes them:
   * **Weight: Channel** (default: `1.5`): The weight given to the overall playlist history of the channel.
   * **Weight: Keyword** (default: `2.0`): The weight given to matching title keywords (per keyword matched).
   * **Weight: Duration** (default: `0.5`): The weight given to the video's duration category ('short', 'medium', or 'long').
