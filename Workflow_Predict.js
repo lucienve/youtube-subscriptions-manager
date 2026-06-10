@@ -15,6 +15,39 @@ function buildPredictionModel(ss) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return null; // No history
 
+  // Fetch weights from the 'Settings' sheet if it exists
+  const settingsSheet = ss.getSheetByName('Settings');
+  let channelWeight = 1.5;
+  let keywordWeight = 2.0;
+  let durationWeight = 0.5;
+
+  if (settingsSheet) {
+    const cWeightStr = getSettingValue(settingsSheet, 'Weight: Channel');
+    const kWeightStr = getSettingValue(settingsSheet, 'Weight: Keyword');
+    const dWeightStr = getSettingValue(settingsSheet, 'Weight: Duration');
+
+    if (cWeightStr === '') {
+      setSettingValue(settingsSheet, 'Weight: Channel', channelWeight);
+    } else {
+      const parsed = parseFloat(cWeightStr);
+      if (!isNaN(parsed)) channelWeight = parsed;
+    }
+
+    if (kWeightStr === '') {
+      setSettingValue(settingsSheet, 'Weight: Keyword', keywordWeight);
+    } else {
+      const parsed = parseFloat(kWeightStr);
+      if (!isNaN(parsed)) keywordWeight = parsed;
+    }
+
+    if (dWeightStr === '') {
+      setSettingValue(settingsSheet, 'Weight: Duration', durationWeight);
+    } else {
+      const parsed = parseFloat(dWeightStr);
+      if (!isNaN(parsed)) durationWeight = parsed;
+    }
+  }
+
   // Data: [Date, Channel, Title, Duration, Playlist]
   const data = sheet.getRange(2, 2, lastRow - 1, 4).getValues();
 
@@ -23,7 +56,12 @@ function buildPredictionModel(ss) {
     channelStats: Object.create(null),
     channelWordStats: Object.create(null),
     channelDurationStats: Object.create(null),
-    playlists: new Set()
+    playlists: new Set(),
+    weights: {
+      channel: channelWeight,
+      keyword: keywordWeight,
+      duration: durationWeight
+    }
   };
 
   data.forEach(([channelRaw, titleRaw, duration, playlistRaw]) => {
@@ -63,7 +101,7 @@ function buildPredictionModel(ss) {
 
 /**
  * Predicts the most likely playlist for a specific video using weighted scores.
- * Weights: Channel (High), Title (Medium), Duration (Low).
+ * Weights: Channel (Medium), Title (High), Duration (Low).
  * Returns empty string if confidence is low or if '_DISCARD_' is the winner.
  *
  * @param {Object} video - Object containing {channel, title, duration}.
@@ -79,26 +117,28 @@ function predictPlaylist(video, model) {
   // Initialize scores
   playlists.forEach(p => scores[p] = 0);
 
-  // 1. Channel Score (Weight: 3)
+  const weights = model.weights || { channel: 1.5, keyword: 2.0, duration: 0.5 };
+
+  // 1. Channel Score
   const cStats = model.channelStats[video.channel];
   if (cStats) {
     const total = Object.values(cStats).reduce((a, b) => a + b, 0);
     for (const pl in cStats) {
-      scores[pl] += (cStats[pl] / total) * 3;
+      scores[pl] += (cStats[pl] / total) * weights.channel;
     }
   }
 
-  // 2. Duration Score (Weight: 1)
+  // 2. Duration Score
   const bucket = getDurationBucket(video.duration);
   const dStats = model.channelDurationStats[video.channel] ? model.channelDurationStats[video.channel][bucket] : null;
   if (dStats) {
     const total = Object.values(dStats).reduce((a, b) => a + b, 0);
     for (const pl in dStats) {
-      scores[pl] += (dStats[pl] / total) * 1;
+      scores[pl] += (dStats[pl] / total) * weights.duration;
     }
   }
 
-  // 3. Title Keyword Score (Weight: 0.5 per word)
+  // 3. Title Keyword Score (per word)
   // Now tracks keywords internally per-channel.
   const words = getKeywords(video.title);
   words.forEach(w => {
@@ -106,7 +146,7 @@ function predictPlaylist(video, model) {
     if (wStats) {
       const total = Object.values(wStats).reduce((a, b) => a + b, 0);
       for (const pl in wStats) {
-        scores[pl] += (wStats[pl] / total) * 0.5;
+        scores[pl] += (wStats[pl] / total) * weights.keyword;
       }
     }
   });
@@ -188,5 +228,5 @@ function getKeywords(title) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { getKeywords, getDurationBucket, predictPlaylist };
+  module.exports = { getKeywords, getDurationBucket, predictPlaylist, buildPredictionModel };
 }

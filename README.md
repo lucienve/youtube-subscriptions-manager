@@ -66,7 +66,32 @@ To use the YouTube Data API to manage playlists and subscriptions, your Google A
 
 Open the **Settings** tab in your spreadsheet:
 * **Playlists:** In Column A (starting at Row 3), type the exact names of the YouTube playlists you want to use (e.g., "Watch Later", "Podcasts", "To Sort"). *The script will automatically find their hidden IDs the first time it runs.*
-* **Last Run Time:** In cell **B1**, you can specify a date to fetch videos from (format: `YYYY-MM-DD HH:MM:SS`). If left blank, the script will automatically default to fetching videos from exactly one week ago.
+* **Last Run Time:** In Column B, you can specify a date to fetch videos from (format: `YYYY-MM-DD HH:MM:SS`). If left blank, the script will automatically default to fetching videos from exactly one week ago.
+* **Prediction Weights (Optional):** Controls the relative weights of the AI prediction model factors (in Column B). If these settings do not exist yet, the script will automatically initialize them on the first run:
+  * **Weight: Channel** (default: `1.5`): The weight given to the overall playlist history of the channel.
+  * **Weight: Keyword** (default: `2.0`): The weight given to matching title keywords (per keyword matched).
+  * **Weight: Duration** (default: `0.5`): The weight given to the video's duration category ('short', 'medium', or 'long').
+
+### 🧠 Tuning the Prediction Model
+
+The Inbox prediction system assigns a score to each playlist based on the history of the video's channel, duration, and title keywords. The playlist with the highest score wins (as long as it exceeds a confidence threshold).
+
+You can easily adjust these weights in the **Settings** tab to change the sorting behavior:
+
+* **Weight: Channel (Default: `1.5`)**:
+  * **What it means**: The general tendency of a channel's videos to go to a specific playlist. If Channel One has 90% of its videos sent to Playlist A, this represents a strong channel-level default.
+  * **When to increase**: If you want a channel's overall default history to almost always override keyword matches or duration.
+* **Weight: Keyword (Default: `2.0`)**:
+  * **What it means**: The predictive power of specific words in the title. For example, if videos from Channel One with the keyword "foobar" in their title always go to Playlist B, matching that keyword adds this score.
+  * **When to increase**: If you want specific keywords (like series names, e.g. "Podcast", "Tutorial", "Review") to easily override the channel's general default playlist.
+* **Weight: Duration (Default: `0.5`)**:
+  * **What it means**: The tendency of videos of a certain length (short `< 1m`, medium `1m - 5m`, long `> 5m`) to go to a specific playlist. For example, sorting short videos to "Shorts" and long videos to "Read Later".
+  * **When to increase**: If you want video length to be a strong factor in sorting.
+
+#### Adjusting Scenarios:
+* **"Keyword matches aren't overriding the channel default"**: Keep `Weight: Keyword` higher than `Weight: Channel` (e.g. Keyword: `2.0`, Channel: `1.5`). This allows a single strong keyword match to outscore the channel default.
+* **"Sort strictly by channel"**: Set `Weight: Channel` high (e.g. `5.0`) and set others to `0`. This forces the tool to only sort based on the channel's dominant playlist in history.
+
 
 ### 2. Fetch New Videos
 

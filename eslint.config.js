@@ -28,7 +28,8 @@ module.exports = [
         it: "readonly",
         expect: "readonly",
         beforeEach: "readonly",
-        jest: "readonly"
+        jest: "readonly",
+        global: "readonly"
       }
     },
     plugins: {
