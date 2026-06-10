@@ -11,11 +11,14 @@ It uses Google Sheets as a UI and database, fetching new videos from subscriptio
 - Basic keyword-based prediction for playlist sorting.
 - UI for users to select videos in Google Sheets and push them to YouTube Playlists.
 - **Deduplicating Playlists:** Added a new menu item to deduplicate YouTube playlists. It uses an HTML dropdown dialog to let the user select a playlist from their configuration, then uses the YouTube Data API to fetch items, preserving the first occurrence of each video and marking subsequent duplicate occurrences for deletion.
+- **Subscription Count Guardrail:** Added a pre-check to catch subscription size drops (e.g. YouTube API failing to list all subscriptions/paging limits). Alerts the user with a popup confirmation dialog if the subscription count differs by > 10 from the previous run.
 
 ## Architectural Decisions
 - **Quota Protection:** Heavy reliance on RSS for initial fetching to save YouTube Data API units.
 - **Local Development:** Project is managed locally using clasp, allowing the use of ESLint and Jest for testing pure functions.
 - **Deduplication Dialog:** Uses `HtmlService` (`Dialog_Deduplicate.html`) for the deduplication feature to provide a clean, reliable user selection dropdown that queries the latest configured playlists dynamically.
+- **Subscription Guardrail Pre-check:** The guardrail is evaluated immediately after fetching the subscription list, preventing any RSS feed scans, video duration lookups, or sheet modifications if the user aborts.
+- **Subscription Count Storage & Layout:** The last run's subscription count is stored in cell `Settings!B2` (label in `Settings!A2`). The playlist table header has been shifted to Row 3, and playlist configuration data starts at Row 4.
 
 ## Future Plans
 - Continued monitoring of quota usage.

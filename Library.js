@@ -10,9 +10,9 @@
  */
 function refreshPlaylistConfig(settingsSheet) {
   const lastRow = settingsSheet.getLastRow();
-  if (lastRow < 3) return {};
+  if (lastRow < 4) return {};
 
-  const range = settingsSheet.getRange(3, 1, lastRow - 2, 2);
+  const range = settingsSheet.getRange(4, 1, lastRow - 3, 2);
   const data = range.getValues();
   
   let map = {};
@@ -23,7 +23,7 @@ function refreshPlaylistConfig(settingsSheet) {
       if (id && id !== '') {
         map[name] = id;
       } else {
-        missingIds.push({ name: name, rowIndex: index + 3 });
+        missingIds.push({ name: name, rowIndex: index + 4 });
       }
     }
   });

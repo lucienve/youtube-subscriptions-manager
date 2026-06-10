@@ -53,6 +53,25 @@ function checkNewVideos() {
     return;
   }
 
+  // --- SUBSCRIPTION GUARDRAIL ---
+  const lastSubCountVal = settingsSheet.getRange('B2').getValue();
+  const lastSubCount = parseInt(lastSubCountVal, 10);
+  if (!isNaN(lastSubCount) && lastSubCountVal !== '') {
+    const subDiff = Math.abs(channels.length - lastSubCount);
+    if (subDiff > 10) {
+      const ui = SpreadsheetApp.getUi();
+      const response = ui.alert(
+        'Warning: Subscription Count Discrepancy',
+        `The number of fetched subscriptions (${channels.length}) differs from the last run (${lastSubCount}) by ${subDiff}.\n\nDo you wish to proceed?`,
+        ui.ButtonSet.YES_NO
+      );
+      if (response !== ui.Button.YES) {
+        ss.toast('Run cancelled by user due to subscription count discrepancy.', 'Cancelled');
+        return;
+      }
+    }
+  }
+
   // --- RSS SCANNING ---
   const BATCH_SIZE = 20; 
   let potentialVideos = [];
@@ -132,6 +151,11 @@ function checkNewVideos() {
   }
 
   if (potentialVideos.length === 0) {
+    const labelRange = settingsSheet.getRange('A2');
+    if (labelRange.getValue() === '') {
+      labelRange.setValue('Last Subscription Count');
+    }
+    settingsSheet.getRange('B2').setValue(channels.length);
     ss.toast('No new videos found.', 'Complete', 5);
     return;
   }
@@ -201,6 +225,12 @@ function checkNewVideos() {
 
   const newestDate = potentialVideos[potentialVideos.length - 1].date;
   settingsSheet.getRange('B1').setValue(Utilities.formatDate(newestDate, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss"));
+  
+  const labelRange = settingsSheet.getRange('A2');
+  if (labelRange.getValue() === '') {
+    labelRange.setValue('Last Subscription Count');
+  }
+  settingsSheet.getRange('B2').setValue(channels.length);
   
   ss.toast(`Done! Found ${potentialVideos.length} new videos.`, 'Complete', 5);
 
