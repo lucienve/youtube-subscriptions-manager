@@ -9,3 +9,5 @@ README.md
 eslint.config.js
 package.json
 package-lock.json
+docs/**
+
