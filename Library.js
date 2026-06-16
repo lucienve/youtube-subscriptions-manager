@@ -240,6 +240,33 @@ function setSettingValue(settingsSheet, label, value) {
   }
 }
 
+/**
+ * Groups sorted row numbers into contiguous ranges.
+ * Used to optimize row deletion by batching contiguous deletions.
+ *
+ * @param {Array<number>} rows - Sorted array of row indices to delete.
+ * @return {Array<Object>} - Array of {start: number, count: number} ranges.
+ */
+function getDeleteRanges(rows) {
+  if (!rows || rows.length === 0) return [];
+
+  const ranges = [];
+  let start = rows[0];
+  let count = 1;
+
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i] === start + count) {
+      count++;
+    } else {
+      ranges.push({ start: start, count: count });
+      start = rows[i];
+      count = 1;
+    }
+  }
+  ranges.push({ start: start, count: count });
+  return ranges;
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { parseDuration, escapeFormula, getSettingValue, setSettingValue };
+  module.exports = { parseDuration, escapeFormula, getSettingValue, setSettingValue, getDeleteRanges };
 }

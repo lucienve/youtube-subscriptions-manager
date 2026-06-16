@@ -22,6 +22,7 @@ module.exports = [
         addToPlaylist: "readonly",
         getSettingValue: "readonly",
         setSettingValue: "readonly",
+        getDeleteRanges: "readonly",
         module: "readonly",
         require: "readonly",
         describe: "readonly",
@@ -41,7 +42,7 @@ module.exports = [
         {
           "vars": "local",
           "args": "after-used",
-          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS)$",
+          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|getDeleteRanges)$",
           "argsIgnorePattern": "^_"
         }
       ],

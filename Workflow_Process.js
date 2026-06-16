@@ -89,13 +89,23 @@ function processSelectedVideos() {
     }
   }
 
-  // Delete processed rows in reverse order to avoid shifting issues
-  for (let i = rowsToDelete.length - 1; i >= 0; i--) {
-    // Prevent "cannot delete all non-frozen rows" error
-    if (videoSheet.getMaxRows() <= videoSheet.getFrozenRows() + 1) {
-      videoSheet.insertRowAfter(videoSheet.getMaxRows());
+  // Group contiguous rows to delete them in batches, reducing sheet API overhead
+  if (rowsToDelete.length > 0) {
+    const deleteRanges = getDeleteRanges(rowsToDelete);
+
+    // Delete ranges in reverse order (bottom to top) to prevent shifting subsequent indices
+    for (let i = deleteRanges.length - 1; i >= 0; i--) {
+      const range = deleteRanges[i];
+      const maxRows = videoSheet.getMaxRows();
+      const frozenRows = videoSheet.getFrozenRows();
+      
+      // Prevent "cannot delete all non-frozen rows" error
+      if (maxRows - range.count <= frozenRows) {
+        const needed = frozenRows + 1 - (maxRows - range.count);
+        videoSheet.insertRowsAfter(maxRows, needed);
+      }
+      videoSheet.deleteRows(range.start, range.count);
     }
-    videoSheet.deleteRow(rowsToDelete[i]);
   }
 
   // Write History Log
