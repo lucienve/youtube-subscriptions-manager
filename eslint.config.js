@@ -36,7 +36,15 @@ module.exports = [
       googleappsscript: pluginGoogleappsscript
     },
     rules: {
-      "no-unused-vars": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          "vars": "local",
+          "args": "after-used",
+          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS)$",
+          "argsIgnorePattern": "^_"
+        }
+      ],
       "no-undef": "error"
     }
   }

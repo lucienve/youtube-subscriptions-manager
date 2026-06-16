@@ -113,7 +113,7 @@ describe('buildPredictionModel', () => {
   beforeEach(() => {
     mockHistorySheet = {
       getLastRow: jest.fn(() => 4),
-      getRange: jest.fn((row, col, numRows, numCols) => ({
+      getRange: jest.fn((_row, _col, _numRows, _numCols) => ({
         getValues: jest.fn(() => [
           ['Channel One', 'foobar video', 5.0, 'Playlist B'],
           ['Channel One', 'regular video', 3.0, 'Playlist A'],
