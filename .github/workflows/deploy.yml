@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Push code using clasp (Personal Project)
-        uses: lucienve/clasp-action@v1.2.1
+        uses: lucienve/clasp-action@v1
         with:
           accessToken: ${{ secrets.ACCESS_TOKEN }}
           idToken: ${{ secrets.ID_TOKEN }}
@@ -32,7 +32,7 @@ jobs:
         if: ${{ env.TEMPLATE_SCRIPT_ID != '' }}
         env:
           TEMPLATE_SCRIPT_ID: ${{ secrets.TEMPLATE_SCRIPT_ID }}
-        uses: lucienve/clasp-action@v1.2.1
+        uses: lucienve/clasp-action@v1
         with:
           accessToken: ${{ secrets.ACCESS_TOKEN }}
           idToken: ${{ secrets.ID_TOKEN }}
