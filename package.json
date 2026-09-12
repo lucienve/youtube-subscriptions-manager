@@ -20,7 +20,7 @@
   "homepage": "https://github.com/lucienve/youtube-subscriptions-manager#readme",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.9.1",
+    "eslint": "^10.10.0",
     "eslint-plugin-googleappsscript": "^1.0.5",
     "jest": "^30.5.1"
   }
