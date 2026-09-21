@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 16px;
+        background-color: #f8f9fa;
+        color: #333;
+        margin: 0;
+      }
+      h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        font-size: 16px;
+        color: #202124;
+      }
+      .section {
+        background: #ffffff;
+        border: 1px solid #dadce0;
+        border-radius: 6px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+      }
+      .form-group {
+        margin-bottom: 10px;
+      }
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: bold;
+        color: #3c4043;
+      }
+      select, input[type="text"], input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 13px;
+      }
+      .btn {
+        background-color: #1a73e8;
+        color: white;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .btn:hover:not(:disabled) {
+        background-color: #1557b0;
+      }
+      .btn:disabled {
+        background-color: #dadce0;
+        color: #80868b;
+        cursor: not-allowed;
+      }
+      .btn-secondary {
+        background-color: #f1f3f4;
+        color: #3c4043;
+        border: 1px solid #dadce0;
+        padding: 4px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .btn-secondary:hover {
+        background-color: #e8eaed;
+      }
+      .channel-list-container {
+        max-height: 160px;
+        overflow-y: auto;
+        border: 1px solid #dadce0;
+        border-radius: 4px;
+        background: #fff;
+        padding: 4px;
+        margin-top: 6px;
+      }
+      .channel-item {
+        display: flex;
+        align-items: center;
+        padding: 4px 6px;
+        border-bottom: 1px solid #f1f3f4;
+        font-size: 13px;
+      }
+      .channel-item:last-child {
+        border-bottom: none;
+      }
+      .channel-item input {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+      .channel-item label {
+        margin: 0;
+        font-weight: normal;
+        cursor: pointer;
+        flex-grow: 1;
+        display: flex;
+        justify-content: space-between;
+      }
+      .count-badge {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: bold;
+      }
+      .channel-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .quota-box {
+        background-color: #fef7e0;
+        border: 1px solid #f9ab00;
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #b06000;
+        margin-top: 8px;
+      }
+      .quota-warning {
+        background-color: #fce8e6;
+        border-color: #d93025;
+        color: #c5221f;
+      }
+      .result-box {
+        padding: 12px;
+        border-radius: 4px;
+        margin-top: 12px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .result-success {
+        background-color: #e6f4ea;
+        border: 1px solid #137333;
+        color: #137333;
+      }
+      .result-partial {
+        background-color: #fef7e0;
+        border: 1px solid #f9ab00;
+        color: #b06000;
+      }
+      .result-error {
+        background-color: #fce8e6;
+        border: 1px solid #c5221f;
+        color: #c5221f;
+      }
+      #statusText {
+        font-size: 12px;
+        color: #5f6368;
+        margin-top: 6px;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Step 1: Select Source Playlist -->
+    <div class="section">
+      <h3>1. Select Source Playlist</h3>
+      <div class="form-group">
+        <select id="sourcePlaylistSelect">
+          <option value="">Loading your playlists...</option>
+        </select>
+      </div>
+      <button id="scanBtn" class="btn" onclick="scanSourceChannels()" disabled>Scan Channels</button>
+      <div id="scanStatus" id="statusText"></div>
+    </div>
+
+    <!-- Step 2: Channel Selection -->
+    <div id="channelSection" class="section hidden">
+      <h3>2. Select Channel(s) to Move</h3>
+      <div class="channel-toolbar">
+        <input type="text" id="channelSearch" placeholder="Search channels..." oninput="filterChannelList()" style="width: 55%;">
+        <div>
+          <button type="button" class="btn-secondary" onclick="setSelectAll(true)">All</button>
+          <button type="button" class="btn-secondary" onclick="setSelectAll(false)">None</button>
+        </div>
+      </div>
+      <div id="channelList" class="channel-list-container">
+        <!-- Dynamically populated -->
+      </div>
+      <div style="margin-top: 6px; font-size: 12px; color: #5f6368;" id="selectionSummary">
+        0 channels selected (0 videos)
+      </div>
+    </div>
+
+    <!-- Step 3: Destination Playlist & Batch Cap -->
+    <div id="destinationSection" class="section hidden">
+      <h3>3. Destination & Quota Settings</h3>
+      <div class="form-group">
+        <label for="destPlaylistSelect">Destination Playlist:</label>
+        <select id="destPlaylistSelect" onchange="updateQuotaEstimate()">
+          <option value="">Select Destination Playlist</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="batchCapInput">Batch Size Cap (Videos to move in this run):</label>
+        <input type="number" id="batchCapInput" value="50" min="1" max="100" oninput="updateQuotaEstimate()">
+      </div>
+      <div id="quotaBox" class="quota-box">
+        <div id="quotaText">Moving 0 videos will use ~0 quota units.</div>
+      </div>
+      <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 8px;">
+        <button id="moveBtn" class="btn" onclick="confirmAndMove()" disabled>Move Videos</button>
+      </div>
+    </div>
+
+    <!-- Feedback & Result Message -->
+    <div id="resultContainer" class="hidden"></div>
+
+    <script>
+      let userPlaylists = [];
+      let currentChannels = [];
+
+      // Initialize playlists on load
+      google.script.run
+        .withSuccessHandler(onPlaylistsLoaded)
+        .withFailureHandler(onPlaylistsError)
+        .getUserPlaylists();
+
+      function onPlaylistsLoaded(playlists) {
+        userPlaylists = playlists || [];
+        const sourceSelect = document.getElementById('sourcePlaylistSelect');
+        sourceSelect.innerHTML = '<option value="">-- Choose Source Playlist --</option>';
+
+        if (userPlaylists.length === 0) {
+          sourceSelect.innerHTML = '<option value="">No playlists found</option>';
+          return;
+        }
+
+        userPlaylists.forEach(pl => {
+          const opt = document.createElement('option');
+          opt.value = pl.id;
+          opt.textContent = pl.title;
+          sourceSelect.appendChild(opt);
+        });
+
+        document.getElementById('scanBtn').disabled = false;
+      }
+
+      function onPlaylistsError(err) {
+        const sourceSelect = document.getElementById('sourcePlaylistSelect');
+        sourceSelect.innerHTML = '<option value="">Error loading playlists</option>';
+        document.getElementById('scanStatus').textContent = 'Error: ' + err.message;
+        document.getElementById('scanStatus').style.color = '#c5221f';
+      }
+
+      function scanSourceChannels() {
+        const sourceId = document.getElementById('sourcePlaylistSelect').value;
+        if (!sourceId) return;
+
+        document.getElementById('scanBtn').disabled = true;
+        document.getElementById('sourcePlaylistSelect').disabled = true;
+        const scanStatus = document.getElementById('scanStatus');
+        scanStatus.textContent = 'Scanning playlist items and grouping channels...';
+        scanStatus.style.color = '#5f6368';
+
+        google.script.run
+          .withSuccessHandler(onChannelsScanned)
+          .withFailureHandler(onScanError)
+          .getSourcePlaylistChannels(sourceId);
+      }
+
+      function onChannelsScanned(channels) {
+        document.getElementById('scanStatus').textContent = '';
+        currentChannels = channels || [];
+
+        if (currentChannels.length === 0) {
+          document.getElementById('scanStatus').textContent = 'This playlist has no videos.';
+          document.getElementById('scanBtn').disabled = false;
+          document.getElementById('sourcePlaylistSelect').disabled = false;
+          return;
+        }
+
+        renderChannelList(currentChannels);
+        populateDestPlaylists();
+
+        document.getElementById('channelSection').classList.remove('hidden');
+        document.getElementById('destinationSection').classList.remove('hidden');
+      }
+
+      function onScanError(err) {
+        document.getElementById('scanBtn').disabled = false;
+        document.getElementById('sourcePlaylistSelect').disabled = false;
+        const scanStatus = document.getElementById('scanStatus');
+        scanStatus.textContent = 'Error: ' + err.message;
+        scanStatus.style.color = '#c5221f';
+      }
+
+      function renderChannelList(channels) {
+        const container = document.getElementById('channelList');
+        container.innerHTML = '';
+
+        channels.forEach((ch, idx) => {
+          const div = document.createElement('div');
+          div.className = 'channel-item';
+          div.dataset.title = ch.channelTitle.toLowerCase();
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = 'ch_' + idx;
+          checkbox.value = ch.channelId;
+          checkbox.dataset.count = ch.count;
+          checkbox.onchange = onChannelSelectionChanged;
+
+          const label = document.createElement('label');
+          label.htmlFor = 'ch_' + idx;
+
+          const titleSpan = document.createElement('span');
+          titleSpan.textContent = ch.channelTitle;
+
+          const countSpan = document.createElement('span');
+          countSpan.className = 'count-badge';
+          countSpan.textContent = ch.count + (ch.count === 1 ? ' video' : ' videos');
+
+          label.appendChild(titleSpan);
+          label.appendChild(countSpan);
+
+          div.appendChild(checkbox);
+          div.appendChild(label);
+          container.appendChild(div);
+        });
+
+        onChannelSelectionChanged();
+      }
+
+      function filterChannelList() {
+        const term = document.getElementById('channelSearch').value.toLowerCase().trim();
+        const items = document.querySelectorAll('.channel-item');
+        items.forEach(item => {
+          const title = item.dataset.title || '';
+          if (title.includes(term)) {
+            item.style.display = 'flex';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      }
+
+      function setSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('#channelList input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+          // Only check visible items if filtered
+          if (cb.closest('.channel-item').style.display !== 'none') {
+            cb.checked = checked;
+          }
+        });
+        onChannelSelectionChanged();
+      }
+
+      function onChannelSelectionChanged() {
+        const checkboxes = document.querySelectorAll('#channelList input[type="checkbox"]:checked');
+        let totalVideos = 0;
+        checkboxes.forEach(cb => {
+          totalVideos += parseInt(cb.dataset.count, 10) || 0;
+        });
+
+        document.getElementById('selectionSummary').textContent = 
+          checkboxes.length + ' channel(s) selected (' + totalVideos + ' total videos)';
+
+        updateQuotaEstimate();
+      }
+
+      function populateDestPlaylists() {
+        const sourceId = document.getElementById('sourcePlaylistSelect').value;
+        const destSelect = document.getElementById('destPlaylistSelect');
+        destSelect.innerHTML = '<option value="">-- Choose Destination Playlist --</option>';
+
+        userPlaylists.forEach(pl => {
+          if (pl.id !== sourceId) {
+            const opt = document.createElement('option');
+            opt.value = pl.id;
+            opt.textContent = pl.title;
+            destSelect.appendChild(opt);
+          }
+        });
+      }
+
+      function getSelectedChannelIds() {
+        const checked = document.querySelectorAll('#channelList input[type="checkbox"]:checked');
+        return Array.from(checked).map(cb => cb.value);
+      }
+
+      function getSelectedVideosCount() {
+        const checked = document.querySelectorAll('#channelList input[type="checkbox"]:checked');
+        let count = 0;
+        checked.forEach(cb => {
+          count += parseInt(cb.dataset.count, 10) || 0;
+        });
+        return count;
+      }
+
+      function updateQuotaEstimate() {
+        const destId = document.getElementById('destPlaylistSelect').value;
+        const selectedChannels = getSelectedChannelIds();
+        const selectedVideos = getSelectedVideosCount();
+        const rawCap = parseInt(document.getElementById('batchCapInput').value, 10);
+        const batchCap = (!isNaN(rawCap) && rawCap > 0) ? Math.min(rawCap, 100) : 50;
+
+        const videosToMove = Math.min(selectedVideos, batchCap);
+        const quotaCost = videosToMove * 100;
+
+        const quotaBox = document.getElementById('quotaBox');
+        const quotaText = document.getElementById('quotaText');
+        const moveBtn = document.getElementById('moveBtn');
+
+        if (selectedVideos === 0 || !destId) {
+          moveBtn.disabled = true;
+        } else {
+          moveBtn.disabled = false;
+        }
+
+        let msg = 'Selected ' + selectedVideos + ' matching video(s). ';
+        if (selectedVideos > batchCap) {
+          msg += 'Batch cap will move ' + videosToMove + ' in this run. ';
+        } else {
+          msg += 'Will move all ' + videosToMove + ' videos. ';
+        }
+        msg += 'Estimated quota cost: ~' + quotaCost + ' units (out of 10,000 daily limit).';
+
+        quotaText.textContent = msg;
+
+        if (quotaCost >= 5000) {
+          quotaBox.className = 'quota-box quota-warning';
+        } else {
+          quotaBox.className = 'quota-box';
+        }
+      }
+
+      function confirmAndMove() {
+        const sourceSelect = document.getElementById('sourcePlaylistSelect');
+        const destSelect = document.getElementById('destPlaylistSelect');
+        const sourceTitle = sourceSelect.options[sourceSelect.selectedIndex].text;
+        const destTitle = destSelect.options[destSelect.selectedIndex].text;
+
+        const selectedVideos = getSelectedVideosCount();
+        const rawCap = parseInt(document.getElementById('batchCapInput').value, 10);
+        const batchCap = (!isNaN(rawCap) && rawCap > 0) ? Math.min(rawCap, 100) : 50;
+        const videosToMove = Math.min(selectedVideos, batchCap);
+        const quotaCost = videosToMove * 100;
+
+        const confirmMsg = 'Confirm Move:\n\n' +
+          '• Source: ' + sourceTitle + '\n' +
+          '• Destination: ' + destTitle + '\n' +
+          '• Videos to move: ' + videosToMove + ' (out of ' + selectedVideos + ' matching)\n' +
+          '• Estimated Quota: ~' + quotaCost + ' units\n\n' +
+          'Do you wish to proceed?';
+
+        if (!confirm(confirmMsg)) return;
+
+        // Disable UI
+        document.getElementById('moveBtn').disabled = true;
+        document.getElementById('destPlaylistSelect').disabled = true;
+        document.getElementById('batchCapInput').disabled = true;
+
+        const resBox = document.getElementById('resultContainer');
+        resBox.className = 'result-box result-partial';
+        resBox.textContent = 'Moving videos in progress... Please keep this window open.';
+        resBox.classList.remove('hidden');
+
+        const sourceId = sourceSelect.value;
+        const destId = destSelect.value;
+        const channelIds = getSelectedChannelIds();
+
+        google.script.run
+          .withSuccessHandler(onMoveSuccess)
+          .withFailureHandler(onMoveError)
+          .moveVideosByChannel(sourceId, destId, channelIds, batchCap);
+      }
+
+      function onMoveSuccess(res) {
+        const resBox = document.getElementById('resultContainer');
+        resBox.innerHTML = '';
+
+        if (!res) {
+          resBox.className = 'result-box result-error';
+          resBox.textContent = 'Unexpected empty response from server.';
+          return;
+        }
+
+        if (res.incomplete) {
+          resBox.className = 'result-box result-partial';
+          let html = '<strong>Partial Move Completed</strong><br>' +
+            'Moved ' + res.movedCount + ' of ' + res.totalMatching + ' matching videos.<br>' +
+            '<strong>' + res.remainingCount + ' matching videos remain</strong> in the source playlist.<br>';
+
+          if (res.reason === 'batch_cap_reached') {
+            html += '<em>Reason: Batch size cap reached. You can run another batch after checking your daily quota.</em><br>';
+          } else if (res.reason === 'quota_exceeded') {
+            html += '<em>Reason: YouTube API daily quota reached. Please wait for your daily quota reset.</em><br>';
+          }
+
+          html += '<small>Estimated quota units used: ~' + res.estimatedQuotaUsed + '</small>';
+          resBox.innerHTML = html;
+        } else {
+          resBox.className = 'result-box result-success';
+          resBox.innerHTML = '<strong>Move Complete!</strong><br>' +
+            'Successfully moved all ' + res.movedCount + ' matching videos.<br>' +
+            '<small>Estimated quota units used: ~' + res.estimatedQuotaUsed + '</small>';
+        }
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'btn';
+        closeBtn.style.marginTop = '10px';
+        closeBtn.textContent = 'Close';
+        closeBtn.onclick = function() { google.script.host.close(); };
+        resBox.appendChild(closeBtn);
+      }
+
+      function onMoveError(err) {
+        const resBox = document.getElementById('resultContainer');
+        resBox.className = 'result-box result-error';
+        resBox.textContent = 'Failed to move videos: ' + err.message;
+        document.getElementById('moveBtn').disabled = false;
+        document.getElementById('destPlaylistSelect').disabled = false;
+        document.getElementById('batchCapInput').disabled = false;
+      }
+    </script>
+  </body>
+</html>

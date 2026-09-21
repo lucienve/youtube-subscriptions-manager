@@ -23,6 +23,12 @@ module.exports = [
         getSettingValue: "readonly",
         setSettingValue: "readonly",
         getDeleteRanges: "readonly",
+        showMoveByChannelDialog: "readonly",
+        getUserPlaylists: "readonly",
+        aggregateChannelsFromPlaylistItems: "readonly",
+        filterPlaylistItemsToMove: "readonly",
+        getSourcePlaylistChannels: "readonly",
+        moveVideosByChannel: "readonly",
         module: "readonly",
         require: "readonly",
         describe: "readonly",
@@ -42,7 +48,7 @@ module.exports = [
         {
           "vars": "local",
           "args": "after-used",
-          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|getDeleteRanges)$",
+          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|getDeleteRanges|showMoveByChannelDialog|getUserPlaylists|aggregateChannelsFromPlaylistItems|filterPlaylistItemsToMove|getSourcePlaylistChannels|moveVideosByChannel)$",
           "argsIgnorePattern": "^_"
         }
       ],

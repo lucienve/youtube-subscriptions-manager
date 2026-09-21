@@ -1,4 +1,4 @@
-// Version: 1.1
+// Version: 1.2
 // Purpose: Configuration constants and Menu setup.
 
 // --- CONFIGURATION ---
@@ -16,5 +16,6 @@ function onOpen() {
     .addItem('Check New Videos', 'checkNewVideos')
     .addItem('Process Selected', 'processSelectedVideos')
     .addItem('Remove Duplicates', 'showDeduplicateDialog')
+    .addItem('Move Videos by Channel', 'showMoveByChannelDialog')
     .addToUi();
 }

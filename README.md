@@ -41,16 +41,17 @@ To use the YouTube Data API to manage playlists and subscriptions, your Google A
 * `Workflow_Process.gs`
 * `Workflow_Predict.gs`
 * `Workflow_Deduplicate.gs`
+* `Workflow_MoveByChannel.gs`
 * `Library.gs`
 
 *(Note: The source files in this repository end in `.js`, but within the Google Apps Script web editor, they must be created with `.gs` extensions. Just copy the contents of the corresponding `.js` files.)*
 
-3. **Important for UI:** You must also create an **HTML** file for the deduplication dialog:
+3. **Important for UI:** You must also create **HTML** files for the dialogs:
    * Click the **+** icon in the Apps Script editor and select **HTML**.
-   * Name it `Dialog_Deduplicate`.
-   * Paste the contents of `Dialog_Deduplicate.html` from this repository into it.
+   * Create `Dialog_Deduplicate` and paste the contents of `Dialog_Deduplicate.html`.
+   * Create `Dialog_MoveByChannel` and paste the contents of `Dialog_MoveByChannel.html`.
 
-3. **Important:** Click the **Save** icon (disk) at the top.
+4. **Important:** Click the **Save** icon (disk) at the top.
 
 ### Step 4: Enable the YouTube API
 
@@ -118,6 +119,17 @@ The script will move the videos to your YouTube playlists, log your choices to t
 Over time, you might accidentally add the same video to a playlist more than once.
 Click **YouTube Tools > Remove Duplicates**. Select a playlist from the dropdown, and the script will find and remove any duplicate videos from that playlist.
 
+### 6. Move Videos by Channel (Optional)
+
+If you have videos in a playlist that you want to reorganize into another playlist by channel/creator:
+1. Click **YouTube Tools > Move Videos by Channel**.
+2. Select any source playlist owned by your account and click **Scan Channels**.
+3. View the list of channels and their video counts, and select one or more channels to move.
+4. Select a destination playlist and an optional batch size cap (default: 50 videos).
+5. The tool computes the estimated API quota cost (each moved video costs 100 units: 50 to add + 50 to delete).
+6. Click **Move Videos**. If the batch size cap is reached or quota runs out, the tool reports how many videos were moved and how many remain in the source playlist.
+*(Note: Reorganizing videos via this tool bypasses the History tab to keep your inbox AI prediction model unaffected.)*
+
 ---
 
 ## ⚠️ Known Limitations & Quotas
@@ -127,8 +139,9 @@ The YouTube Data API provides a free quota of **10,000 units per day**.
 * Fetching your subscriptions via RSS costs **0 units**.
 * Fetching video durations costs **1 unit** per 50 videos.
 * Adding a video to a playlist costs **50 units**.
+* Moving a video between playlists costs **100 units** (50 to add to destination + 50 to delete from source).
 
-Because adding videos is so "expensive," **you can only process approximately 200 videos per day.** To protect your account from being locked out, this script has a built-in safety brake that will stop processing at **190 videos**. If you hit this limit, simply wait until the quota resets the next day to process the rest of your inbox.
+Because adding videos is so "expensive," **you can only process approximately 200 videos per day.** To protect your account from being locked out, this script has a built-in safety brake that will stop processing at **190 videos**. Similarly, the "Move Videos by Channel" feature enforces batch caps and quota warnings to prevent unexpected quota exhaustion. If you hit your daily limit, simply wait until the quota resets the next day.
 
 ---
 
