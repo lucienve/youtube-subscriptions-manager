@@ -125,9 +125,11 @@ If you have videos in a playlist that you want to reorganize into another playli
 1. Click **YouTube Tools > Move Videos by Channel**.
 2. Select any source playlist owned by your account and click **Scan Channels**.
 3. View the list of channels and their video counts, and select one or more channels to move.
-4. Select a destination playlist and an optional batch size cap (default: 50 videos).
-5. The tool computes the estimated API quota cost (each moved video costs 100 units: 50 to add + 50 to delete).
-6. Click **Move Videos**. If the batch size cap is reached or quota runs out, the tool reports how many videos were moved and how many remain in the source playlist.
+4. Select a destination playlist (or the special **🗑️ Trash** option to remove videos from the source playlist without adding them anywhere else) and an optional batch size cap (default: 50 videos).
+5. The tool computes the estimated API quota cost:
+   * Moving to another playlist costs **100 units/video** (50 to add + 50 to delete).
+   * Moving to Trash costs **50 units/video** (50 to delete from source only).
+6. Click **Move Videos** (or **Move to Trash**). If the batch size cap is reached or quota runs out, the tool reports how many videos were moved and how many remain in the source playlist.
 *(Note: Reorganizing videos via this tool bypasses the History tab to keep your inbox AI prediction model unaffected.)*
 
 ---
@@ -140,6 +142,7 @@ The YouTube Data API provides a free quota of **10,000 units per day**.
 * Fetching video durations costs **1 unit** per 50 videos.
 * Adding a video to a playlist costs **50 units**.
 * Moving a video between playlists costs **100 units** (50 to add to destination + 50 to delete from source).
+* Moving a video to Trash costs **50 units** (50 to delete from source only).
 
 Because adding videos is so "expensive," **you can only process approximately 200 videos per day.** To protect your account from being locked out, this script has a built-in safety brake that will stop processing at **190 videos**. Similarly, the "Move Videos by Channel" feature enforces batch caps and quota warnings to prevent unexpected quota exhaustion. If you hit your daily limit, simply wait until the quota resets the next day.
 

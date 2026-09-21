@@ -373,16 +373,36 @@
       function populateDestPlaylists() {
         const sourceId = document.getElementById('sourcePlaylistSelect').value;
         const destSelect = document.getElementById('destPlaylistSelect');
-        destSelect.innerHTML = '<option value="">-- Choose Destination Playlist --</option>';
+        destSelect.innerHTML = '';
+
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '-- Choose Destination Playlist --';
+        destSelect.appendChild(defaultOpt);
+
+        // Special Trash Action Group
+        const actionGroup = document.createElement('optgroup');
+        actionGroup.label = '⚠️ Actions';
+
+        const trashOpt = document.createElement('option');
+        trashOpt.value = '__TRASH__';
+        trashOpt.textContent = '🗑️ Trash (Delete from source playlist only)';
+        actionGroup.appendChild(trashOpt);
+        destSelect.appendChild(actionGroup);
+
+        // Regular Playlists Group
+        const playlistGroup = document.createElement('optgroup');
+        playlistGroup.label = '📁 User Playlists';
 
         userPlaylists.forEach(pl => {
           if (pl.id !== sourceId) {
             const opt = document.createElement('option');
             opt.value = pl.id;
             opt.textContent = pl.title;
-            destSelect.appendChild(opt);
+            playlistGroup.appendChild(opt);
           }
         });
+        destSelect.appendChild(playlistGroup);
       }
 
       function getSelectedChannelIds() {
@@ -401,13 +421,16 @@
 
       function updateQuotaEstimate() {
         const destId = document.getElementById('destPlaylistSelect').value;
+        const isTrash = (destId === '__TRASH__');
+        const costPerVideo = isTrash ? 50 : 100;
+
         const selectedChannels = getSelectedChannelIds();
         const selectedVideos = getSelectedVideosCount();
         const rawCap = parseInt(document.getElementById('batchCapInput').value, 10);
         const batchCap = (!isNaN(rawCap) && rawCap > 0) ? Math.min(rawCap, 100) : 50;
 
         const videosToMove = Math.min(selectedVideos, batchCap);
-        const quotaCost = videosToMove * 100;
+        const quotaCost = videosToMove * costPerVideo;
 
         const quotaBox = document.getElementById('quotaBox');
         const quotaText = document.getElementById('quotaText');
@@ -415,21 +438,40 @@
 
         if (selectedVideos === 0 || !destId) {
           moveBtn.disabled = true;
+          moveBtn.style.backgroundColor = '';
         } else {
           moveBtn.disabled = false;
+          if (isTrash) {
+            moveBtn.textContent = 'Move to Trash';
+            moveBtn.style.backgroundColor = '#d93025';
+          } else {
+            moveBtn.textContent = 'Move Videos';
+            moveBtn.style.backgroundColor = '#1a73e8';
+          }
         }
 
-        let msg = 'Selected ' + selectedVideos + ' matching video(s). ';
-        if (selectedVideos > batchCap) {
-          msg += 'Batch cap will move ' + videosToMove + ' in this run. ';
+        let msg = '';
+        if (isTrash) {
+          msg = 'Selected ' + selectedVideos + ' matching video(s) for removal. ';
+          if (selectedVideos > batchCap) {
+            msg += 'Batch cap will remove ' + videosToMove + ' in this run. ';
+          } else {
+            msg += 'Will remove all ' + videosToMove + ' videos from the source playlist (will NOT be added anywhere else). ';
+          }
+          msg += 'Estimated quota cost: ~' + quotaCost + ' units (50 units/video: delete only).';
         } else {
-          msg += 'Will move all ' + videosToMove + ' videos. ';
+          msg = 'Selected ' + selectedVideos + ' matching video(s). ';
+          if (selectedVideos > batchCap) {
+            msg += 'Batch cap will move ' + videosToMove + ' in this run. ';
+          } else {
+            msg += 'Will move all ' + videosToMove + ' videos. ';
+          }
+          msg += 'Estimated quota cost: ~' + quotaCost + ' units (100 units/video: 50 add + 50 delete).';
         }
-        msg += 'Estimated quota cost: ~' + quotaCost + ' units (out of 10,000 daily limit).';
 
         quotaText.textContent = msg;
 
-        if (quotaCost >= 5000) {
+        if (isTrash || quotaCost >= 5000) {
           quotaBox.className = 'quota-box quota-warning';
         } else {
           quotaBox.className = 'quota-box';
@@ -441,34 +483,47 @@
         const destSelect = document.getElementById('destPlaylistSelect');
         const sourceTitle = sourceSelect.options[sourceSelect.selectedIndex].text;
         const destTitle = destSelect.options[destSelect.selectedIndex].text;
+        const destId = destSelect.value;
+        const isTrash = (destId === '__TRASH__');
+        const costPerVideo = isTrash ? 50 : 100;
 
         const selectedVideos = getSelectedVideosCount();
         const rawCap = parseInt(document.getElementById('batchCapInput').value, 10);
         const batchCap = (!isNaN(rawCap) && rawCap > 0) ? Math.min(rawCap, 100) : 50;
         const videosToMove = Math.min(selectedVideos, batchCap);
-        const quotaCost = videosToMove * 100;
+        const quotaCost = videosToMove * costPerVideo;
 
-        const confirmMsg = 'Confirm Move:\n\n' +
-          '• Source: ' + sourceTitle + '\n' +
-          '• Destination: ' + destTitle + '\n' +
-          '• Videos to move: ' + videosToMove + ' (out of ' + selectedVideos + ' matching)\n' +
-          '• Estimated Quota: ~' + quotaCost + ' units\n\n' +
-          'Do you wish to proceed?';
+        let confirmMsg = '';
+        if (isTrash) {
+          confirmMsg = 'Confirm Move to Trash:\n\n' +
+            '• Source: ' + sourceTitle + '\n' +
+            '• Action: 🗑️ Permanently remove from ' + sourceTitle + ' (will NOT be added anywhere else)\n' +
+            '• Videos to remove: ' + videosToMove + ' (out of ' + selectedVideos + ' matching)\n' +
+            '• Estimated Quota: ~' + quotaCost + ' units (50 units/video)\n\n' +
+            'Are you sure you want to delete these videos from the source playlist?';
+        } else {
+          confirmMsg = 'Confirm Move:\n\n' +
+            '• Source: ' + sourceTitle + '\n' +
+            '• Destination: ' + destTitle + '\n' +
+            '• Videos to move: ' + videosToMove + ' (out of ' + selectedVideos + ' matching)\n' +
+            '• Estimated Quota: ~' + quotaCost + ' units (100 units/video)\n\n' +
+            'Do you wish to proceed?';
+        }
 
         if (!confirm(confirmMsg)) return;
 
         // Disable UI
         document.getElementById('moveBtn').disabled = true;
+        document.getElementById('moveBtn').style.backgroundColor = '';
         document.getElementById('destPlaylistSelect').disabled = true;
         document.getElementById('batchCapInput').disabled = true;
 
         const resBox = document.getElementById('resultContainer');
         resBox.className = 'result-box result-partial';
-        resBox.textContent = 'Moving videos in progress... Please keep this window open.';
+        resBox.textContent = (isTrash ? 'Removing videos in progress...' : 'Moving videos in progress...') + ' Please keep this window open.';
         resBox.classList.remove('hidden');
 
         const sourceId = sourceSelect.value;
-        const destId = destSelect.value;
         const channelIds = getSelectedChannelIds();
 
         google.script.run
@@ -487,10 +542,13 @@
           return;
         }
 
+        const actionDone = res.isTrash ? 'Removal' : 'Move';
+        const actionVerb = res.isTrash ? 'Removed' : 'Moved';
+
         if (res.incomplete) {
           resBox.className = 'result-box result-partial';
-          let html = '<strong>Partial Move Completed</strong><br>' +
-            'Moved ' + res.movedCount + ' of ' + res.totalMatching + ' matching videos.<br>' +
+          let html = '<strong>Partial ' + actionDone + ' Completed</strong><br>' +
+            actionVerb + ' ' + res.movedCount + ' of ' + res.totalMatching + ' matching videos.<br>' +
             '<strong>' + res.remainingCount + ' matching videos remain</strong> in the source playlist.<br>';
 
           if (res.reason === 'batch_cap_reached') {
@@ -503,8 +561,8 @@
           resBox.innerHTML = html;
         } else {
           resBox.className = 'result-box result-success';
-          resBox.innerHTML = '<strong>Move Complete!</strong><br>' +
-            'Successfully moved all ' + res.movedCount + ' matching videos.<br>' +
+          resBox.innerHTML = '<strong>' + actionDone + ' Complete!</strong><br>' +
+            'Successfully ' + (res.isTrash ? 'removed' : 'moved') + ' all ' + res.movedCount + ' matching videos.<br>' +
             '<small>Estimated quota units used: ~' + res.estimatedQuotaUsed + '</small>';
         }
 

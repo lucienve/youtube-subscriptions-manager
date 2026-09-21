@@ -1,5 +1,7 @@
-// Version: 1.0
-// Purpose: Handles moving videos from a source playlist to a destination playlist filtered by channel.
+// Version: 1.1
+// Purpose: Handles moving videos from a source playlist to a destination playlist (or Trash) filtered by channel.
+
+const DESTINATION_TRASH = '__TRASH__';
 
 /**
  * Displays the HTML modal dialog for the user to move videos by channel.
@@ -228,12 +230,15 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
     };
   }
 
+  const isTrash = (destinationPlaylistId === DESTINATION_TRASH);
+  const costPerVideo = isTrash ? 50 : 100;
   let movedCount = 0;
   let quotaExceeded = false;
   let abortReason = null;
   const errors = [];
 
-  ss.toast(`Moving ${itemsToMove.length} of ${totalMatching} matching videos...`, 'Processing');
+  const actionVerb = isTrash ? 'Removing' : 'Moving';
+  ss.toast(`${actionVerb} ${itemsToMove.length} of ${totalMatching} matching videos...`, 'Processing');
 
   for (let i = 0; i < itemsToMove.length; i++) {
     const item = itemsToMove[i];
@@ -245,19 +250,21 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
     }
 
     try {
-      // Step 1: Insert into destination playlist
-      YouTube.PlaylistItems.insert({
-        snippet: {
-          playlistId: destinationPlaylistId,
-          resourceId: {
-            kind: 'youtube#video',
-            videoId: videoId
+      if (!isTrash) {
+        // Step 1: Insert into destination playlist
+        YouTube.PlaylistItems.insert({
+          snippet: {
+            playlistId: destinationPlaylistId,
+            resourceId: {
+              kind: 'youtube#video',
+              videoId: videoId
+            }
           }
-        }
-      }, 'snippet');
+        }, 'snippet');
 
-      if (typeof Utilities !== 'undefined' && Utilities.sleep) {
-        Utilities.sleep(150);
+        if (typeof Utilities !== 'undefined' && Utilities.sleep) {
+          Utilities.sleep(150);
+        }
       }
 
       // Step 2: Remove from source playlist
@@ -268,7 +275,7 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
         Utilities.sleep(150);
       }
     } catch (err) {
-      console.error(`Error moving item ${item.id} (${videoId}): ${err.message}`);
+      console.error(`Error processing item ${item.id} (${videoId}): ${err.message}`);
       errors.push(err.message);
 
       if (err.message && (err.message.includes('quotaExceeded') || err.message.includes('quota') || err.code === 403)) {
@@ -279,7 +286,8 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
     }
 
     if ((i + 1) % 5 === 0 || (i + 1) === itemsToMove.length) {
-      ss.toast(`Moved ${movedCount} of ${itemsToMove.length} videos...`, 'Progress');
+      const actionDoneProgress = isTrash ? 'Removed' : 'Moved';
+      ss.toast(`${actionDoneProgress} ${movedCount} of ${itemsToMove.length} videos...`, 'Progress');
     }
   }
 
@@ -290,13 +298,14 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
     abortReason = 'batch_cap_reached';
   }
 
-  const estimatedQuotaUsed = (movedCount * 100) + scanPages;
+  const estimatedQuotaUsed = (movedCount * costPerVideo) + scanPages;
 
-  let toastMsg = `Moved ${movedCount} videos.`;
+  const actionDone = isTrash ? 'Removed' : 'Moved';
+  let toastMsg = `${actionDone} ${movedCount} videos.`;
   if (incomplete) {
-    toastMsg += ` (Partial move: ${remainingCount} remain)`;
+    toastMsg += ` (Partial: ${remainingCount} remain)`;
   }
-  ss.toast(toastMsg, 'Move Finished', 8);
+  ss.toast(toastMsg, 'Complete', 8);
 
   return {
     success: true,
@@ -304,6 +313,7 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
     totalMatching: totalMatching,
     remainingCount: remainingCount,
     incomplete: incomplete,
+    isTrash: isTrash,
     quotaExceeded: quotaExceeded,
     reason: abortReason,
     errors: errors,
@@ -313,6 +323,7 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
 
 if (typeof module !== 'undefined') {
   module.exports = {
+    DESTINATION_TRASH,
     showMoveByChannelDialog,
     getUserPlaylists,
     aggregateChannelsFromPlaylistItems,

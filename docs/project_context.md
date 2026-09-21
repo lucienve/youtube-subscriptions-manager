@@ -13,7 +13,7 @@ It uses Google Sheets as a UI and database, fetching new videos from subscriptio
 - **Deduplicating Playlists:** Added a new menu item to deduplicate YouTube playlists. It uses an HTML dropdown dialog to let the user select a playlist from their configuration, then uses the YouTube Data API to fetch items, preserving the first occurrence of each video and marking subsequent duplicate occurrences for deletion.
 - **Subscription Count Guardrail:** Added a pre-check to catch subscription size drops (e.g. YouTube API failing to list all subscriptions/paging limits). Alerts the user with a popup confirmation dialog if the subscription count differs by > 10 from the previous run.
 - **Prediction Weights Tuning & Config:** Tuned prediction weights to allow title keywords to override general channel default playlists, and moved weight configuration to settings in the spreadsheet itself (under labels `Weight: Channel`, `Weight: Keyword`, and `Weight: Duration`).
-- **Move Videos by Channel:** Added a tool to reorganize videos between playlists by uploader channel. Opens a modal dialog (`Dialog_MoveByChannel.html`) allowing the user to select any playlist owned by their account, scan and aggregate videos grouped by creator channel with video counts, multi-select channels, set a destination playlist, configure a batch size cap (default 50), and move the matching videos with clear quota budgeting and feedback.
+- **Move Videos by Channel:** Added a tool to reorganize videos between playlists by uploader channel. Opens a modal dialog (`Dialog_MoveByChannel.html`) allowing the user to select any playlist owned by their account, scan and aggregate videos grouped by creator channel with video counts, multi-select channels, set a destination playlist (or the special 'Trash' destination to remove from source without re-adding), configure a batch size cap (default 50), and move/remove the matching videos with clear quota budgeting and feedback.
 
 ## Architectural Decisions
 - **Quota Protection:** Heavy reliance on RSS for initial fetching to save YouTube Data API units.
@@ -25,7 +25,8 @@ It uses Google Sheets as a UI and database, fetching new videos from subscriptio
 - **Move Videos by Channel Guardrails & Reliability:**
   - **Ownership Scope:** Queries `YouTube.Playlists.list('snippet', { mine: true })` to dynamically list all playlists owned by the authenticated account.
   - **Insert-First Transactional Pattern:** Always inserts into the destination playlist and verifies success before removing from the source playlist to prevent permanent video loss.
-  - **Quota Budgeting & Batch Capping:** Each moved video costs 100 quota units (50 insert + 50 remove). Enforces a batch size cap (default 50 = 5,000 units) and warns users in the UI when approaching quota limits.
+  - **Trash Destination:** Supports a prominent 'Trash' action at the top of destinations that removes matching videos from the source playlist without re-adding them anywhere, costing only 50 quota units/video (delete only).
+  - **Quota Budgeting & Batch Capping:** Each moved video costs 100 quota units (50 insert + 50 remove) or 50 units if moved to Trash. Enforces a batch size cap (default 50 = 5,000 units) and warns users in the UI when approaching quota limits.
   - **Incomplete / Partial Move Transparency:** If the batch size cap is reached or daily quota is exhausted, reports the exact number of moved videos and remaining matching videos to the user.
   - **History Bypass:** Out-of-band playlist reorganizing bypasses the `History` sheet to avoid polluting the statistical inbox prediction model.
 

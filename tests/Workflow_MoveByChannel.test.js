@@ -1,4 +1,5 @@
 const {
+  DESTINATION_TRASH,
   aggregateChannelsFromPlaylistItems,
   filterPlaylistItemsToMove,
   moveVideosByChannel
@@ -150,5 +151,74 @@ describe('moveVideosByChannel parameter validation', () => {
       .toThrow('At least one channel must be selected.');
     expect(() => moveVideosByChannel('PL_SRC', 'PL_DEST', null, 50))
       .toThrow('At least one channel must be selected.');
+  });
+});
+
+describe('DESTINATION_TRASH and moveVideosByChannel execution', () => {
+  beforeEach(() => {
+    global.SpreadsheetApp = {
+      getActiveSpreadsheet: jest.fn(() => ({
+        toast: jest.fn()
+      }))
+    };
+    global.YouTube = {
+      PlaylistItems: {
+        list: jest.fn(),
+        insert: jest.fn(),
+        remove: jest.fn()
+      }
+    };
+  });
+
+  it('exports DESTINATION_TRASH constant as __TRASH__', () => {
+    expect(DESTINATION_TRASH).toBe('__TRASH__');
+  });
+
+  it('removes videos without inserting when destination is DESTINATION_TRASH', () => {
+    global.YouTube.PlaylistItems.list.mockReturnValue({
+      items: [
+        { id: 'item1', snippet: { videoOwnerChannelId: 'UC_A', resourceId: { videoId: 'v1' } } },
+        { id: 'item2', snippet: { videoOwnerChannelId: 'UC_B', resourceId: { videoId: 'v2' } } }
+      ],
+      nextPageToken: null
+    });
+
+    const res = moveVideosByChannel('PL_SRC', DESTINATION_TRASH, ['UC_A'], 50);
+
+    expect(res.success).toBe(true);
+    expect(res.isTrash).toBe(true);
+    expect(res.movedCount).toBe(1);
+    expect(res.remainingCount).toBe(0);
+    expect(global.YouTube.PlaylistItems.insert).not.toHaveBeenCalled();
+    expect(global.YouTube.PlaylistItems.remove).toHaveBeenCalledWith('item1');
+    // Quota cost for trash: 50 units/video + 1 scan page = 51
+    expect(res.estimatedQuotaUsed).toBe(51);
+  });
+
+  it('inserts and removes videos when destination is a normal playlist', () => {
+    global.YouTube.PlaylistItems.list.mockReturnValue({
+      items: [
+        { id: 'item1', snippet: { videoOwnerChannelId: 'UC_A', resourceId: { videoId: 'v1' } } }
+      ],
+      nextPageToken: null
+    });
+
+    const res = moveVideosByChannel('PL_SRC', 'PL_DEST', ['UC_A'], 50);
+
+    expect(res.success).toBe(true);
+    expect(res.isTrash).toBe(false);
+    expect(res.movedCount).toBe(1);
+    expect(global.YouTube.PlaylistItems.insert).toHaveBeenCalledWith({
+      snippet: {
+        playlistId: 'PL_DEST',
+        resourceId: {
+          kind: 'youtube#video',
+          videoId: 'v1'
+        }
+      }
+    }, 'snippet');
+    expect(global.YouTube.PlaylistItems.remove).toHaveBeenCalledWith('item1');
+    // Quota cost for normal move: 100 units/video + 1 scan page = 101
+    expect(res.estimatedQuotaUsed).toBe(101);
   });
 });
