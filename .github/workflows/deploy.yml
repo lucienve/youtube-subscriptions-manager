@@ -9,13 +9,21 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: deploy-gas
+  cancel-in-progress: false
+
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
     runs-on: ubuntu-latest
+    env:
+      TEMPLATE_SCRIPT_ID: ${{ secrets.TEMPLATE_SCRIPT_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Push code using clasp (Personal Project)
         uses: lucienve/clasp-action@v1
@@ -30,8 +38,6 @@ jobs:
 
       - name: Push code using clasp (Template Project)
         if: ${{ env.TEMPLATE_SCRIPT_ID != '' }}
-        env:
-          TEMPLATE_SCRIPT_ID: ${{ secrets.TEMPLATE_SCRIPT_ID }}
         uses: lucienve/clasp-action@v1
         with:
           accessToken: ${{ secrets.ACCESS_TOKEN }}
@@ -39,5 +45,5 @@ jobs:
           refreshToken: ${{ secrets.REFRESH_TOKEN }}
           clientId: ${{ secrets.CLIENT_ID }}
           clientSecret: ${{ secrets.CLIENT_SECRET }}
-          scriptId: ${{ secrets.TEMPLATE_SCRIPT_ID }}
+          scriptId: ${{ env.TEMPLATE_SCRIPT_ID }}
           command: 'push'
