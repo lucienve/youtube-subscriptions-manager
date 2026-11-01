@@ -1,9 +1,10 @@
-// Version: 1.2
+// Version: 1.3
 // Purpose: Configuration constants and Menu setup.
 
 // --- CONFIGURATION ---
 const SHEET_VIDEOS = 'Videos';
 const SHEET_SETTINGS = 'Settings';
+const SHEET_HISTORY = 'History';
 
 /**
  * Creates the custom menu in the Google Sheets UI when the spreadsheet is opened.
@@ -18,4 +19,8 @@ function onOpen() {
     .addItem('Remove Duplicates', 'showDeduplicateDialog')
     .addItem('Move Videos by Channel', 'showMoveByChannelDialog')
     .addToUi();
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { SHEET_VIDEOS, SHEET_SETTINGS, SHEET_HISTORY };
 }

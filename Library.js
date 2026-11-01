@@ -1,14 +1,36 @@
-// Version: 1.2
+// Version: 1.3
 // Purpose: Reusable helper functions for API calls and configuration.
+
+/**
+ * Determines whether an error indicates YouTube API quota exhaustion.
+ *
+ * @param {any} err - The error or exception object to check.
+ * @return {boolean} True if quota exceeded, false otherwise.
+ */
+function isQuotaExceededError(err) {
+  if (!err) return false;
+  const msg = String(err.message || err);
+  const causeMsg = (err.cause && err.cause.message) ? String(err.cause.message) : '';
+  const combined = (msg + ' ' + causeMsg).toLowerCase();
+  if (combined.includes('quotaexceeded') || combined.includes('dailylimitexceeded') || combined.includes('quota exceeded')) {
+    return true;
+  }
+  if (err.details && Array.isArray(err.details.errors)) {
+    return err.details.errors.some(e => e.reason === 'quotaExceeded' || e.reason === 'dailyLimitExceeded');
+  }
+  return false;
+}
 
 /**
  * Reads the 'Settings' sheet to map Playlist Names to IDs.
  * If IDs are missing, it searches YouTube and updates the sheet.
  *
  * @param {Sheet} settingsSheet - The 'Settings' sheet object.
+ * @param {Object} [options] - Optional settings, e.g. { silentUi: boolean }.
  * @return {Object} - A map of { 'PlaylistName': 'PlaylistId' }.
  */
-function refreshPlaylistConfig(settingsSheet) {
+function refreshPlaylistConfig(settingsSheet, options) {
+  const silentUi = Boolean(options && options.silentUi);
   const lastRow = settingsSheet.getLastRow();
   if (lastRow < 1) return {};
 
@@ -26,7 +48,9 @@ function refreshPlaylistConfig(settingsSheet) {
   }
 
   if (headerIndex === -1) {
-    SpreadsheetApp.getUi().alert('Could not find "Playlist Name" and "Playlist ID" headers in Columns A & B of the Settings sheet.');
+    if (!silentUi) {
+      SpreadsheetApp.getUi().alert('Could not find "Playlist Name" and "Playlist ID" headers in Columns A & B of the Settings sheet.');
+    }
     return {};
   }
 
@@ -34,10 +58,10 @@ function refreshPlaylistConfig(settingsSheet) {
   let missingIds = [];
 
   for (let i = headerIndex + 1; i < data.length; i++) {
-    const name = data[i][0];
-    const id = data[i][1];
-    if (name && name !== '') {
-      if (id && id !== '') {
+    const name = String(data[i][0] || '').trim();
+    const id = String(data[i][1] || '').trim();
+    if (name !== '') {
+      if (id !== '') {
         map[name] = id;
       } else {
         missingIds.push({ name: name, rowIndex: i + 1 });
@@ -56,17 +80,26 @@ function refreshPlaylistConfig(settingsSheet) {
           maxResults: 50,
           pageToken: pageToken
         });
-        response.items.forEach(pl => {
-          myPlaylists[pl.snippet.title] = pl.id;
-        });
-        pageToken = response.nextPageToken;
+        if (response && response.items) {
+          response.items.forEach(pl => {
+            if (pl.snippet && pl.snippet.title) {
+              myPlaylists[pl.snippet.title.trim()] = pl.id;
+            }
+          });
+        }
+        pageToken = response ? response.nextPageToken : null;
       } while (pageToken);
     } catch (e) {
-      if (e.message.includes('Channel not found') || e.message.includes('channelNotFound')) {
+      if (e.message && (e.message.includes('Channel not found') || e.message.includes('channelNotFound'))) {
         console.error('YouTube channel not found. Ensure the Google Account has a linked YouTube channel.');
-        SpreadsheetApp.getUi().alert('YouTube Channel Required: Your Google Account does not have an active YouTube channel. A channel is required to look up playlists. Please check the "Ensure You Have a YouTube Channel" section in the README for instructions, or enter Playlist IDs manually.');
+        if (!silentUi) {
+          SpreadsheetApp.getUi().alert('YouTube Channel Required: Your Google Account does not have an active YouTube channel. A channel is required to look up playlists. Please check the "Ensure You Have a YouTube Channel" section in the README for instructions, or enter Playlist IDs manually.');
+        }
       } else {
         console.error('Error fetching playlists: ' + e.message);
+        if (!silentUi) {
+          SpreadsheetApp.getUi().alert('Error fetching playlists: ' + e.message);
+        }
       }
     }
 
@@ -105,9 +138,9 @@ function addToPlaylist(playlistId, videoId) {
 
 /**
  * Fetches ALL subscribed channels for the authenticated user.
- * Handles pagination automatically.
+ * Handles pagination automatically. Returns null on error to prevent partial fetches.
  *
- * @return {Array<string>} - Array of Channel IDs.
+ * @return {Array<string>|null} - Array of Channel IDs or null on failure.
  */
 function getAllSubscriptions() {
   let channels = [];
@@ -119,48 +152,55 @@ function getAllSubscriptions() {
         maxResults: 50,
         pageToken: pageToken
       });
-      if (response.items) {
-        response.items.forEach(item => channels.push(item.snippet.resourceId.channelId));
+      if (response && response.items) {
+        response.items.forEach(item => {
+          if (item && item.snippet && item.snippet.resourceId && item.snippet.resourceId.channelId) {
+            channels.push(item.snippet.resourceId.channelId);
+          }
+        });
       }
-      pageToken = response.nextPageToken;
+      pageToken = response ? response.nextPageToken : null;
     } while (pageToken);
   } catch (e) {
-    if (e.message.includes('Channel not found') || e.message.includes('channelNotFound')) {
+    if (e.message && (e.message.includes('Channel not found') || e.message.includes('channelNotFound'))) {
       console.error('YouTube channel not found. Cannot fetch subscriptions.');
       SpreadsheetApp.getUi().alert('YouTube Channel Required: Your Google Account does not have an active YouTube channel. A channel is required to fetch your subscriptions. Please check the "Ensure You Have a YouTube Channel" section in the README for instructions.');
     } else {
       console.error('Error fetching subscriptions: ' + e.message);
       SpreadsheetApp.getUi().alert('Error fetching subscriptions: ' + e.message);
     }
+    return null;
   }
   return channels;
 }
 
 /**
- * Converts ISO 8601 duration (PT1H2M10S) to decimal minutes (e.g., 1.50).
+ * Converts ISO 8601 duration (e.g. P1D, PT1H2M10S) to decimal minutes (e.g., 1.50).
  * Handles LIVE/Upcoming events by checking for zero duration.
  *
  * @param {string} isoDuration - The raw duration string from YouTube API.
- * @return {string|number} - Decimal minutes (e.g. 5.50) or "LIVE/UPCOMING".
+ * @return {string} - Decimal minutes (e.g. "5.50") or "LIVE/UPCOMING".
  */
 function parseDuration(isoDuration) {
   if (!isoDuration || isoDuration === 'P0D') return 'LIVE/UPCOMING';
-  
-  const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+
+  const match = isoDuration.match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/);
   if (!match) return 'LIVE/UPCOMING';
 
-  const hours = parseInt((match[1] || '').replace('H', '')) || 0;
-  const mins = parseInt((match[2] || '').replace('M', '')) || 0;
-  const secs = parseInt((match[3] || '').replace('S', '')) || 0;
+  const days = parseInt(match[1] || '0', 10);
+  const hours = parseInt(match[2] || '0', 10);
+  const mins = parseInt(match[3] || '0', 10);
+  const secs = parseInt(match[4] || '0', 10);
 
   // Calculate total minutes
-  const totalMinutes = (hours * 60) + mins + (secs / 60);
+  const totalMinutes = (days * 1440) + (hours * 60) + mins + (secs / 60);
 
   if (totalMinutes === 0) return 'LIVE/UPCOMING';
 
   // Return formatted to 2 decimal places (e.g., "1.25")
   return totalMinutes.toFixed(2);
 }
+
 /**
  * Escapes a string to prevent formula injection in Google Sheets.
  * If the string starts with =, +, -, or @, it prefixes it with a single quote.
@@ -185,10 +225,11 @@ function escapeFormula(value) {
 function getSettingValue(settingsSheet, label) {
   const lastRow = settingsSheet.getLastRow();
   if (lastRow < 1) return '';
-  const data = settingsSheet.getRange(1, 1, lastRow, 1).getValues();
+  const data = settingsSheet.getRange(1, 1, lastRow, 2).getValues();
+  const target = String(label).trim().toLowerCase();
   for (let i = 0; i < data.length; i++) {
-    if (String(data[i][0]).trim().toLowerCase() === label.toLowerCase()) {
-      return settingsSheet.getRange(i + 1, 2).getValue();
+    if (String(data[i][0]).trim().toLowerCase() === target) {
+      return data[i][1];
     }
   }
   return '';
@@ -206,24 +247,19 @@ function getSettingValue(settingsSheet, label) {
  */
 function setSettingValue(settingsSheet, label, value) {
   const lastRow = settingsSheet.getLastRow();
+  let headerRow = -1;
+  const target = String(label).trim().toLowerCase();
+
   if (lastRow >= 1) {
     const data = settingsSheet.getRange(1, 1, lastRow, 2).getValues();
     for (let i = 0; i < data.length; i++) {
-      if (String(data[i][0]).trim().toLowerCase() === label.toLowerCase()) {
+      const colA = String(data[i][0]).trim();
+      if (colA.toLowerCase() === target) {
         settingsSheet.getRange(i + 1, 2).setValue(value);
         return;
       }
-    }
-  }
-
-  // If not found, find "Playlist Name" header to insert above it
-  let headerRow = -1;
-  if (lastRow >= 1) {
-    const data = settingsSheet.getRange(1, 1, lastRow, 2).getValues();
-    for (let i = 0; i < data.length; i++) {
-      if (String(data[i][0]).trim() === 'Playlist Name' && String(data[i][1]).trim() === 'Playlist ID') {
+      if (headerRow === -1 && colA === 'Playlist Name' && String(data[i][1]).trim() === 'Playlist ID') {
         headerRow = i + 1;
-        break;
       }
     }
   }
@@ -268,5 +304,15 @@ function getDeleteRanges(rows) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { parseDuration, escapeFormula, getSettingValue, setSettingValue, getDeleteRanges };
+  module.exports = {
+    isQuotaExceededError,
+    refreshPlaylistConfig,
+    addToPlaylist,
+    getAllSubscriptions,
+    parseDuration,
+    escapeFormula,
+    getSettingValue,
+    setSettingValue,
+    getDeleteRanges
+  };
 }

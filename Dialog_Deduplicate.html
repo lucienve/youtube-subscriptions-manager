@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8">
     <base target="_top">
+    <title>Remove Duplicates</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -55,7 +57,7 @@
       </select>
     </div>
     <button id="submitBtn" onclick="submitDeduplicate()" disabled>Remove Duplicates</button>
-    <div id="status"></div>
+    <div id="status" role="status" aria-live="polite"></div>
 
     <script>
       function populateDropdown(playlistNames) {

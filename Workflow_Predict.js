@@ -1,4 +1,4 @@
-// Version: 1.2
+// Version: 1.3
 // Purpose: Contains the "AI" logic for analyzing history and making predictions.
 
 /**
@@ -9,14 +9,17 @@
  * @return {Object} model - A complex object containing frequency maps for channels, words, and durations.
  */
 function buildPredictionModel(ss) {
-  const sheet = ss.getSheetByName('History');
+  const historySheetName = (typeof SHEET_HISTORY !== 'undefined') ? SHEET_HISTORY : 'History';
+  const settingsSheetName = (typeof SHEET_SETTINGS !== 'undefined') ? SHEET_SETTINGS : 'Settings';
+
+  const sheet = ss.getSheetByName(historySheetName);
   if (!sheet) return null;
 
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return null; // No history
 
   // Fetch weights from the 'Settings' sheet if it exists
-  const settingsSheet = ss.getSheetByName('Settings');
+  const settingsSheet = ss.getSheetByName(settingsSheetName);
   let channelWeight = 1.5;
   let keywordWeight = 2.0;
   let durationWeight = 0.5;
@@ -112,10 +115,12 @@ function predictPlaylist(video, model) {
   if (!model) return '';
 
   const playlists = Array.from(model.playlists);
-  const scores = {};
+  const scores = Object.create(null);
 
   // Initialize scores
-  playlists.forEach(p => scores[p] = 0);
+  playlists.forEach(p => {
+    scores[p] = 0;
+  });
 
   const weights = model.weights || { channel: 1.5, keyword: 2.0, duration: 0.5 };
 

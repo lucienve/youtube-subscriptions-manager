@@ -1,3 +1,7 @@
+const { SHEET_SETTINGS, SHEET_HISTORY } = require('../Main');
+global.SHEET_SETTINGS = SHEET_SETTINGS;
+global.SHEET_HISTORY = SHEET_HISTORY;
+
 const { getSettingValue, setSettingValue } = require('../Library');
 global.getSettingValue = getSettingValue;
 global.setSettingValue = setSettingValue;

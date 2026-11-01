@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8">
     <base target="_top">
+    <title>Move Videos by Channel</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -152,7 +154,7 @@
         border: 1px solid #c5221f;
         color: #c5221f;
       }
-      #statusText {
+      #scanStatus {
         font-size: 12px;
         color: #5f6368;
         margin-top: 6px;
@@ -167,19 +169,19 @@
     <div class="section">
       <h3>1. Select Source Playlist</h3>
       <div class="form-group">
-        <select id="sourcePlaylistSelect">
+        <select id="sourcePlaylistSelect" aria-label="Select source playlist">
           <option value="">Loading your playlists...</option>
         </select>
       </div>
       <button id="scanBtn" class="btn" onclick="scanSourceChannels()" disabled>Scan Channels</button>
-      <div id="scanStatus" id="statusText"></div>
+      <div id="scanStatus" role="status" aria-live="polite"></div>
     </div>
 
     <!-- Step 2: Channel Selection -->
     <div id="channelSection" class="section hidden">
       <h3>2. Select Channel(s) to Move</h3>
       <div class="channel-toolbar">
-        <input type="text" id="channelSearch" placeholder="Search channels..." oninput="filterChannelList()" style="width: 55%;">
+        <input type="text" id="channelSearch" placeholder="Search channels..." oninput="filterChannelList()" style="width: 55%;" aria-label="Search channels">
         <div>
           <button type="button" class="btn-secondary" onclick="setSelectAll(true)">All</button>
           <button type="button" class="btn-secondary" onclick="setSelectAll(false)">None</button>
@@ -215,7 +217,7 @@
     </div>
 
     <!-- Feedback & Result Message -->
-    <div id="resultContainer" class="hidden"></div>
+    <div id="resultContainer" class="hidden" role="status" aria-live="polite"></div>
 
     <script>
       let userPlaylists = [];
@@ -555,6 +557,8 @@
             html += '<em>Reason: Batch size cap reached. You can run another batch after checking your daily quota.</em><br>';
           } else if (res.reason === 'quota_exceeded') {
             html += '<em>Reason: YouTube API daily quota reached. Please wait for your daily quota reset.</em><br>';
+          } else if (res.reason === 'item_errors') {
+            html += '<em>Reason: Some videos encountered errors during processing (e.g. private or unavailable videos).</em><br>';
           }
 
           html += '<small>Estimated quota units used: ~' + res.estimatedQuotaUsed + '</small>';

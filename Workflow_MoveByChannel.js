@@ -1,4 +1,4 @@
-// Version: 1.1
+// Version: 1.2
 // Purpose: Handles moving videos from a source playlist to a destination playlist (or Trash) filtered by channel.
 
 const DESTINATION_TRASH = '__TRASH__';
@@ -187,138 +187,153 @@ function moveVideosByChannel(sourcePlaylistId, destinationPlaylistId, channelIds
     throw new Error('At least one channel must be selected.');
   }
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  ss.toast('Fetching playlist items...', 'Move Videos');
-
-  const allItems = [];
-  let pageToken = '';
-  let scanPages = 0;
+  const lock = (typeof LockService !== 'undefined') ? LockService.getDocumentLock() : null;
+  if (lock && !lock.tryLock(0)) {
+    throw new Error('Another YouTube Tools operation is currently running. Please wait for it to complete.');
+  }
 
   try {
-    do {
-      const response = YouTube.PlaylistItems.list('snippet', {
-        playlistId: sourcePlaylistId,
-        maxResults: 50,
-        pageToken: pageToken
-      });
-      scanPages++;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    ss.toast('Fetching playlist items...', 'Move Videos');
 
-      if (response && response.items) {
-        allItems.push(...response.items);
-      }
-      pageToken = response ? response.nextPageToken : null;
-    } while (pageToken);
-  } catch (e) {
-    console.error(`Error reading source playlist: ${e.message}`);
-    throw new Error(`Failed to read source playlist: ${e.message}`, { cause: e });
-  }
-
-  const filtered = filterPlaylistItemsToMove(allItems, channelIds, batchCap);
-  const itemsToMove = filtered.itemsToMove;
-  const totalMatching = filtered.totalMatching;
-
-  if (itemsToMove.length === 0) {
-    ss.toast('No matching videos found to move.', 'Move Complete', 5);
-    return {
-      success: true,
-      movedCount: 0,
-      totalMatching: 0,
-      remainingCount: 0,
-      incomplete: false,
-      reason: null,
-      estimatedQuotaUsed: scanPages
-    };
-  }
-
-  const isTrash = (destinationPlaylistId === DESTINATION_TRASH);
-  const costPerVideo = isTrash ? 50 : 100;
-  let movedCount = 0;
-  let quotaExceeded = false;
-  let abortReason = null;
-  const errors = [];
-
-  const actionVerb = isTrash ? 'Removing' : 'Moving';
-  ss.toast(`${actionVerb} ${itemsToMove.length} of ${totalMatching} matching videos...`, 'Processing');
-
-  for (let i = 0; i < itemsToMove.length; i++) {
-    const item = itemsToMove[i];
-    const videoId = item.snippet && item.snippet.resourceId && item.snippet.resourceId.videoId;
-
-    if (!videoId) {
-      errors.push(`Item ${item.id} had no valid videoId`);
-      continue;
-    }
+    const allItems = [];
+    let pageToken = '';
+    let scanPages = 0;
 
     try {
-      if (!isTrash) {
-        // Step 1: Insert into destination playlist
-        YouTube.PlaylistItems.insert({
-          snippet: {
-            playlistId: destinationPlaylistId,
-            resourceId: {
-              kind: 'youtube#video',
-              videoId: videoId
+      do {
+        const response = YouTube.PlaylistItems.list('snippet', {
+          playlistId: sourcePlaylistId,
+          maxResults: 50,
+          pageToken: pageToken
+        });
+        scanPages++;
+
+        if (response && response.items) {
+          allItems.push(...response.items);
+        }
+        pageToken = response ? response.nextPageToken : null;
+      } while (pageToken);
+    } catch (e) {
+      console.error(`Error reading source playlist: ${e.message}`);
+      throw new Error(`Failed to read source playlist: ${e.message}`, { cause: e });
+    }
+
+    const filtered = filterPlaylistItemsToMove(allItems, channelIds, batchCap);
+    const itemsToMove = filtered.itemsToMove;
+    const totalMatching = filtered.totalMatching;
+
+    if (itemsToMove.length === 0) {
+      ss.toast('No matching videos found to move.', 'Move Complete', 5);
+      return {
+        success: true,
+        movedCount: 0,
+        totalMatching: 0,
+        remainingCount: 0,
+        incomplete: false,
+        reason: null,
+        estimatedQuotaUsed: scanPages
+      };
+    }
+
+    const isTrash = (destinationPlaylistId === DESTINATION_TRASH);
+    const costPerVideo = isTrash ? 50 : 100;
+    let movedCount = 0;
+    let quotaExceeded = false;
+    let abortReason = null;
+    const errors = [];
+
+    const actionVerb = isTrash ? 'Removing' : 'Moving';
+    ss.toast(`${actionVerb} ${itemsToMove.length} of ${totalMatching} matching videos...`, 'Processing');
+
+    for (let i = 0; i < itemsToMove.length; i++) {
+      const item = itemsToMove[i];
+      const videoId = item.snippet && item.snippet.resourceId && item.snippet.resourceId.videoId;
+
+      if (!videoId) {
+        errors.push(`Item ${item.id} had no valid videoId`);
+        continue;
+      }
+
+      try {
+        if (!isTrash) {
+          // Step 1: Insert into destination playlist
+          YouTube.PlaylistItems.insert({
+            snippet: {
+              playlistId: destinationPlaylistId,
+              resourceId: {
+                kind: 'youtube#video',
+                videoId: videoId
+              }
             }
+          }, 'snippet');
+
+          if (typeof Utilities !== 'undefined' && Utilities.sleep) {
+            Utilities.sleep(150);
           }
-        }, 'snippet');
+        }
+
+        // Step 2: Remove from source playlist
+        YouTube.PlaylistItems.remove(item.id);
+        movedCount++;
 
         if (typeof Utilities !== 'undefined' && Utilities.sleep) {
           Utilities.sleep(150);
         }
+      } catch (err) {
+        console.error(`Error processing item ${item.id} (${videoId}): ${err.message}`);
+        errors.push(err.message);
+
+        if (isQuotaExceededError(err)) {
+          quotaExceeded = true;
+          abortReason = 'quota_exceeded';
+          break;
+        }
       }
 
-      // Step 2: Remove from source playlist
-      YouTube.PlaylistItems.remove(item.id);
-      movedCount++;
-
-      if (typeof Utilities !== 'undefined' && Utilities.sleep) {
-        Utilities.sleep(150);
-      }
-    } catch (err) {
-      console.error(`Error processing item ${item.id} (${videoId}): ${err.message}`);
-      errors.push(err.message);
-
-      if (err.message && (err.message.includes('quotaExceeded') || err.message.includes('quota') || err.code === 403)) {
-        quotaExceeded = true;
-        abortReason = 'quota_exceeded';
-        break;
+      if ((i + 1) % 5 === 0 || (i + 1) === itemsToMove.length) {
+        const actionDoneProgress = isTrash ? 'Removed' : 'Moved';
+        ss.toast(`${actionDoneProgress} ${movedCount} of ${itemsToMove.length} videos...`, 'Progress');
       }
     }
 
-    if ((i + 1) % 5 === 0 || (i + 1) === itemsToMove.length) {
-      const actionDoneProgress = isTrash ? 'Removed' : 'Moved';
-      ss.toast(`${actionDoneProgress} ${movedCount} of ${itemsToMove.length} videos...`, 'Progress');
+    const remainingCount = totalMatching - movedCount;
+    const incomplete = remainingCount > 0;
+
+    if (!abortReason && incomplete) {
+      if (errors.length > 0 && movedCount < itemsToMove.length) {
+        abortReason = 'item_errors';
+      } else {
+        abortReason = 'batch_cap_reached';
+      }
+    }
+
+    const estimatedQuotaUsed = (movedCount * costPerVideo) + scanPages;
+
+    const actionDone = isTrash ? 'Removed' : 'Moved';
+    let toastMsg = `${actionDone} ${movedCount} videos.`;
+    if (incomplete) {
+      toastMsg += ` (Partial: ${remainingCount} remain)`;
+    }
+    ss.toast(toastMsg, 'Complete', 8);
+
+    return {
+      success: true,
+      movedCount: movedCount,
+      totalMatching: totalMatching,
+      remainingCount: remainingCount,
+      incomplete: incomplete,
+      isTrash: isTrash,
+      quotaExceeded: quotaExceeded,
+      reason: abortReason,
+      errors: errors,
+      estimatedQuotaUsed: estimatedQuotaUsed
+    };
+  } finally {
+    if (lock) {
+      lock.releaseLock();
     }
   }
-
-  const remainingCount = totalMatching - movedCount;
-  const incomplete = remainingCount > 0;
-
-  if (!abortReason && incomplete) {
-    abortReason = 'batch_cap_reached';
-  }
-
-  const estimatedQuotaUsed = (movedCount * costPerVideo) + scanPages;
-
-  const actionDone = isTrash ? 'Removed' : 'Moved';
-  let toastMsg = `${actionDone} ${movedCount} videos.`;
-  if (incomplete) {
-    toastMsg += ` (Partial: ${remainingCount} remain)`;
-  }
-  ss.toast(toastMsg, 'Complete', 8);
-
-  return {
-    success: true,
-    movedCount: movedCount,
-    totalMatching: totalMatching,
-    remainingCount: remainingCount,
-    incomplete: incomplete,
-    isTrash: isTrash,
-    quotaExceeded: quotaExceeded,
-    reason: abortReason,
-    errors: errors,
-    estimatedQuotaUsed: estimatedQuotaUsed
-  };
 }
 
 if (typeof module !== 'undefined') {

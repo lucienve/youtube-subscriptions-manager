@@ -13,6 +13,8 @@ module.exports = [
         ...pluginGoogleappsscript.environments.googleappsscript.globals,
         SHEET_SETTINGS: "readonly",
         SHEET_VIDEOS: "readonly",
+        SHEET_HISTORY: "readonly",
+        isQuotaExceededError: "readonly",
         refreshPlaylistConfig: "readonly",
         buildPredictionModel: "readonly",
         getAllSubscriptions: "readonly",
@@ -49,7 +51,7 @@ module.exports = [
         {
           "vars": "local",
           "args": "after-used",
-          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|getDeleteRanges|DESTINATION_TRASH|showMoveByChannelDialog|getUserPlaylists|aggregateChannelsFromPlaylistItems|filterPlaylistItemsToMove|getSourcePlaylistChannels|moveVideosByChannel)$",
+          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|SHEET_HISTORY|isQuotaExceededError|getDeleteRanges|DESTINATION_TRASH|showMoveByChannelDialog|getUserPlaylists|aggregateChannelsFromPlaylistItems|filterPlaylistItemsToMove|getSourcePlaylistChannels|moveVideosByChannel)$",
           "argsIgnorePattern": "^_"
         }
       ],

@@ -1,3 +1,6 @@
+const { isQuotaExceededError } = require('../Library');
+global.isQuotaExceededError = isQuotaExceededError;
+
 const {
   DESTINATION_TRASH,
   aggregateChannelsFromPlaylistItems,
@@ -155,7 +158,16 @@ describe('moveVideosByChannel parameter validation', () => {
 });
 
 describe('DESTINATION_TRASH and moveVideosByChannel execution', () => {
+  let mockLock;
+
   beforeEach(() => {
+    mockLock = {
+      tryLock: jest.fn(() => true),
+      releaseLock: jest.fn()
+    };
+    global.LockService = {
+      getDocumentLock: jest.fn(() => mockLock)
+    };
     global.SpreadsheetApp = {
       getActiveSpreadsheet: jest.fn(() => ({
         toast: jest.fn()
@@ -191,8 +203,8 @@ describe('DESTINATION_TRASH and moveVideosByChannel execution', () => {
     expect(res.remainingCount).toBe(0);
     expect(global.YouTube.PlaylistItems.insert).not.toHaveBeenCalled();
     expect(global.YouTube.PlaylistItems.remove).toHaveBeenCalledWith('item1');
-    // Quota cost for trash: 50 units/video + 1 scan page = 51
     expect(res.estimatedQuotaUsed).toBe(51);
+    expect(mockLock.releaseLock).toHaveBeenCalled();
   });
 
   it('inserts and removes videos when destination is a normal playlist', () => {
@@ -218,7 +230,52 @@ describe('DESTINATION_TRASH and moveVideosByChannel execution', () => {
       }
     }, 'snippet');
     expect(global.YouTube.PlaylistItems.remove).toHaveBeenCalledWith('item1');
-    // Quota cost for normal move: 100 units/video + 1 scan page = 101
     expect(res.estimatedQuotaUsed).toBe(101);
+    expect(mockLock.releaseLock).toHaveBeenCalled();
+  });
+
+  it('sets reason to item_errors when individual item operations fail', () => {
+    global.YouTube.PlaylistItems.list.mockReturnValue({
+      items: [
+        { id: 'item1', snippet: { videoOwnerChannelId: 'UC_A', resourceId: { videoId: 'v1' } } }
+      ],
+      nextPageToken: null
+    });
+    global.YouTube.PlaylistItems.insert.mockImplementation(() => {
+      throw new Error('videoNotFound');
+    });
+
+    const res = moveVideosByChannel('PL_SRC', 'PL_DEST', ['UC_A'], 50);
+
+    expect(res.incomplete).toBe(true);
+    expect(res.movedCount).toBe(0);
+    expect(res.remainingCount).toBe(1);
+    expect(res.reason).toBe('item_errors');
+    expect(res.errors).toHaveLength(1);
+    expect(mockLock.releaseLock).toHaveBeenCalled();
+  });
+
+  it('sets reason to batch_cap_reached when matching exceeds batchCap and items succeed', () => {
+    global.YouTube.PlaylistItems.list.mockReturnValue({
+      items: [
+        { id: 'item1', snippet: { videoOwnerChannelId: 'UC_A', resourceId: { videoId: 'v1' } } },
+        { id: 'item2', snippet: { videoOwnerChannelId: 'UC_A', resourceId: { videoId: 'v2' } } }
+      ],
+      nextPageToken: null
+    });
+
+    const res = moveVideosByChannel('PL_SRC', DESTINATION_TRASH, ['UC_A'], 1);
+
+    expect(res.incomplete).toBe(true);
+    expect(res.movedCount).toBe(1);
+    expect(res.remainingCount).toBe(1);
+    expect(res.reason).toBe('batch_cap_reached');
+  });
+
+  it('throws error if LockService cannot acquire lock', () => {
+    mockLock.tryLock.mockReturnValue(false);
+
+    expect(() => moveVideosByChannel('PL_SRC', 'PL_DEST', ['UC_A'], 50))
+      .toThrow('Another YouTube Tools operation is currently running');
   });
 });

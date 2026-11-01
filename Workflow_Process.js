@@ -1,11 +1,12 @@
-// Version: 1.4
+// Version: 1.5
 // Purpose: Handles user actions (moving videos to playlists or discarding them) and logging history.
 
 /**
  * Reads user selections from the 'Videos' sheet.
  * - If a playlist is selected: Adds video to YouTube playlist, logs to History, deletes row.
  * - If NO playlist is selected: Logs as _DISCARD_ to History, deletes row.
- * - SAFETY: Stops if daily quota (approx 190 adds) is reached.
+ * - If unknown playlist: Marks cell with error note, increments failure count, leaves row.
+ * - SAFETY: Stops if daily quota is reached or quotaExceeded occurs.
  * - MAINTENANCE: Trims History tab if it exceeds 2000 rows.
  *
  * No parameters.
@@ -15,126 +16,171 @@ function processSelectedVideos() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const videoSheet = ss.getSheetByName(SHEET_VIDEOS);
   const settingsSheet = ss.getSheetByName(SHEET_SETTINGS);
-  const historySheet = ss.getSheetByName('History');
+  const historySheetName = (typeof SHEET_HISTORY !== 'undefined') ? SHEET_HISTORY : 'History';
+  const historySheet = ss.getSheetByName(historySheetName);
 
-  const playlistIds = refreshPlaylistConfig(settingsSheet);
-
-  const lastRow = videoSheet.getLastRow();
-  if (lastRow < 2) {
-    SpreadsheetApp.getUi().alert('No videos to process.');
+  if (!videoSheet || !settingsSheet || !historySheet) {
+    SpreadsheetApp.getUi().alert(`Required sheet(s) "${SHEET_VIDEOS}", "${SHEET_SETTINGS}", or "${historySheetName}" not found.`);
     return;
   }
 
-  // Read 7 columns: [Dest, Thumb, Duration, Channel, Title, ID, Date]
-  const range = videoSheet.getRange(2, 1, lastRow - 1, 7);
-  const data = range.getValues();
+  const lock = (typeof LockService !== 'undefined') ? LockService.getDocumentLock() : null;
+  if (lock && !lock.tryLock(0)) {
+    SpreadsheetApp.getUi().alert('Another YouTube Tools operation is currently running. Please wait for it to complete.');
+    return;
+  }
 
-  let videosAdded = 0;
-  let videosDiscarded = 0;
-  let historyLog = [];
-  let rowsToDelete = [];
-  let quotaHit = false;
+  try {
+    const playlistIds = refreshPlaylistConfig(settingsSheet);
 
-  ss.toast('Processing videos...', 'Step 1/1');
-
-  // Loop forwards to safely process in chronological order
-  for (let i = 0; i < data.length; i++) {
-
-    // --- QUOTA BRAKE ---
-    if (videosAdded >= 190) {
-      quotaHit = true;
-      break; // Stop immediately to prevent API ban
+    const lastRow = videoSheet.getLastRow();
+    if (lastRow < 2) {
+      SpreadsheetApp.getUi().alert('No videos to process.');
+      return;
     }
 
-    const [choice, , duration, channel, title, videoId] = data[i];
+    // Read 7 columns: [Dest, Thumb, Duration, Channel, Title, ID, Date]
+    const range = videoSheet.getRange(2, 1, lastRow - 1, 7);
+    const data = range.getValues();
 
-    // Case 1: Playlist Selected
-    if (choice && playlistIds[choice]) {
-      try {
-        addToPlaylist(playlistIds[choice], videoId);
+    let videosAdded = 0;
+    let videosDiscarded = 0;
+    let videosFailed = 0;
+    let historyLog = [];
+    let rowsToDelete = [];
+    let quotaHit = false;
 
+    ss.toast('Processing videos...', 'Step 1/1');
+
+    // Loop forwards to safely process in chronological order
+    for (let i = 0; i < data.length; i++) {
+      // --- QUOTA BRAKE ---
+      if (videosAdded >= 190) {
+        quotaHit = true;
+        break; // Stop immediately to prevent API ban
+      }
+
+      const [rawChoice, , duration, channel, title, videoId] = data[i];
+      const choice = (rawChoice !== null && rawChoice !== undefined) ? String(rawChoice).trim() : '';
+
+      // Case 1: Playlist Selected
+      if (choice && playlistIds[choice]) {
+        try {
+          addToPlaylist(playlistIds[choice], videoId);
+
+          historyLog.push([
+            new Date(),
+            escapeFormula(channel),
+            escapeFormula(title),
+            escapeFormula(duration),
+            escapeFormula(choice)
+          ]);
+
+          rowsToDelete.push(i + 2);
+          videosAdded++;
+        } catch (e) {
+          console.error(`Failed to add: ${e.message}`);
+          videosFailed++;
+          videoSheet.getRange(i + 2, 1).setNote(`Error: ${e.message}`);
+
+          if (isQuotaExceededError(e)) {
+            quotaHit = true;
+            break;
+          }
+        }
+      }
+      // Case 2: No Selection (Discard)
+      else if (!choice || choice === '') {
         historyLog.push([
           new Date(),
           escapeFormula(channel),
           escapeFormula(title),
           escapeFormula(duration),
-          escapeFormula(choice)
+          '_DISCARD_'
         ]);
 
         rowsToDelete.push(i + 2);
-        videosAdded++;
-      } catch (e) {
-        console.error(`Failed to add: ${e.message}`);
-        videoSheet.getRange(i + 2, 1).setNote(`Error: ${e.message}`);
+        videosDiscarded++;
+      }
+      // Case 3: Unknown / Invalid Selection
+      else {
+        videosFailed++;
+        videoSheet.getRange(i + 2, 1).setNote(`Error: Playlist "${choice}" not found in Settings.`);
+      }
+
+      // --- PROGRESS TOAST ---
+      const processedCount = i + 1;
+      if (processedCount % 10 === 0) {
+        ss.toast(`Processed ${processedCount} of ${data.length} videos...`, 'Progress');
       }
     }
-    // Case 2: No Selection (Discard)
-    else if (!choice || choice === '') {
-      historyLog.push([
-        new Date(),
-        escapeFormula(channel),
-        escapeFormula(title),
-        escapeFormula(duration),
-        '_DISCARD_'
-      ]);
 
-      rowsToDelete.push(i + 2);
-      videosDiscarded++;
-    }
+    // Group contiguous rows to delete them in batches, reducing sheet API overhead
+    if (rowsToDelete.length > 0) {
+      const deleteRanges = getDeleteRanges(rowsToDelete);
 
-    // --- PROGRESS TOAST ---
-    const processedCount = i + 1;
-    if (processedCount % 10 === 0) {
-      ss.toast(`Processed ${processedCount} of ${data.length} videos...`, 'Progress');
-    }
-  }
-
-  // Group contiguous rows to delete them in batches, reducing sheet API overhead
-  if (rowsToDelete.length > 0) {
-    const deleteRanges = getDeleteRanges(rowsToDelete);
-
-    // Delete ranges in reverse order (bottom to top) to prevent shifting subsequent indices
-    for (let i = deleteRanges.length - 1; i >= 0; i--) {
-      const range = deleteRanges[i];
-      const maxRows = videoSheet.getMaxRows();
-      const frozenRows = videoSheet.getFrozenRows();
-      
-      // Prevent "cannot delete all non-frozen rows" error
-      if (maxRows - range.count <= frozenRows) {
-        const needed = frozenRows + 1 - (maxRows - range.count);
-        videoSheet.insertRowsAfter(maxRows, needed);
+      // Delete ranges in reverse order (bottom to top) to prevent shifting subsequent indices
+      for (let i = deleteRanges.length - 1; i >= 0; i--) {
+        const delRange = deleteRanges[i];
+        const maxRows = videoSheet.getMaxRows();
+        const frozenRows = videoSheet.getFrozenRows();
+        
+        // Prevent "cannot delete all non-frozen rows" error
+        if (maxRows - delRange.count <= frozenRows) {
+          const needed = frozenRows + 1 - (maxRows - delRange.count);
+          videoSheet.insertRowsAfter(maxRows, needed);
+          videoSheet.getRange(maxRows + 1, 1, needed, 7)
+            .setBackground(null)
+            .clearDataValidations()
+            .clearNote();
+          videoSheet.setRowHeights(maxRows + 1, needed, 21);
+        }
+        videoSheet.deleteRows(delRange.start, delRange.count);
       }
-      videoSheet.deleteRows(range.start, range.count);
+    }
+
+    // Write History Log
+    if (historyLog.length > 0) {
+      const startRow = historySheet.getLastRow() + 1;
+      historySheet.getRange(startRow, 1, historyLog.length, 5).setValues(historyLog);
+    }
+
+    // --- AUTO-TRIM HISTORY ---
+    const MAX_HISTORY_ROWS = 2000;
+    const currentHistoryRows = historySheet.getLastRow();
+
+    if (currentHistoryRows > MAX_HISTORY_ROWS) {
+      const rowsToTrim = currentHistoryRows - MAX_HISTORY_ROWS;
+      // Delete oldest rows (after header)
+      historySheet.deleteRows(2, rowsToTrim);
+      console.log(`Auto-trimmed ${rowsToTrim} old rows from History.`);
+    }
+
+    // Final Feedback
+    let message = `Processing Complete.\n\nAdded: ${videosAdded}\nDiscarded: ${videosDiscarded}`;
+    if (videosFailed > 0) {
+      message += `\nFailed / Unresolved: ${videosFailed}`;
+    }
+
+    if (quotaHit) {
+      message += `\n\n⚠️ WARNING: DAILY QUOTA LIMIT REACHED.\nProcessing stopped to prevent a 24-hour API ban.\nPlease wait until tomorrow to process more.`;
+      SpreadsheetApp.getUi().alert(message);
+    } else if (videosFailed > 0) {
+      SpreadsheetApp.getUi().alert(message);
+    } else {
+      ss.toast(message, 'Done', 5);
+    }
+
+    // Reset starting cell for keyboard-only navigation
+    videoSheet.getRange('A2').activate();
+  } finally {
+    if (lock) {
+      lock.releaseLock();
     }
   }
-
-  // Write History Log
-  if (historyLog.length > 0) {
-    const startRow = historySheet.getLastRow() + 1;
-    historySheet.getRange(startRow, 1, historyLog.length, 5).setValues(historyLog);
-  }
-
-  // --- AUTO-TRIM HISTORY ---
-  const MAX_HISTORY_ROWS = 2000;
-  const currentHistoryRows = historySheet.getLastRow();
-
-  if (currentHistoryRows > MAX_HISTORY_ROWS) {
-    const rowsToDelete = currentHistoryRows - MAX_HISTORY_ROWS;
-    // Delete oldest rows (after header)
-    historySheet.deleteRows(2, rowsToDelete);
-    console.log(`Auto-trimmed ${rowsToDelete} old rows from History.`);
-  }
-
-  // Final Feedback
-  let message = `Processing Complete.\n\nAdded: ${videosAdded}\nDiscarded: ${videosDiscarded}`;
-
-  if (quotaHit) {
-    message += `\n\n⚠️ WARNING: DAILY QUOTA LIMIT REACHED (190 Adds).\nProcessing stopped to prevent a 24-hour API ban.\nPlease wait until tomorrow to process more.`;
-    SpreadsheetApp.getUi().alert(message);
-  } else {
-    ss.toast(message, 'Done', 5);
-  }
-
-  // Reset starting cell for keyboard-only navigation
-  videoSheet.getRange('A2').activate();
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = { processSelectedVideos };
+}
+
