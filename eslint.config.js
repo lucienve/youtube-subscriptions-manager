@@ -7,8 +7,9 @@ module.exports = [
     ignores: ["eslint.config.js"]
   },
   {
+    files: ["*.js"],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2022,
       globals: {
         ...pluginGoogleappsscript.environments.googleappsscript.globals,
         SHEET_SETTINGS: "readonly",
@@ -32,8 +33,34 @@ module.exports = [
         filterPlaylistItemsToMove: "readonly",
         getSourcePlaylistChannels: "readonly",
         moveVideosByChannel: "readonly",
-        module: "readonly",
+        module: "readonly"
+      }
+    },
+    plugins: {
+      googleappsscript: pluginGoogleappsscript
+    },
+    rules: {
+      "no-var": "error",
+      "prefer-const": "error",
+      "no-unused-vars": [
+        "error",
+        {
+          "vars": "local",
+          "args": "after-used",
+          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|SHEET_HISTORY|isQuotaExceededError|getDeleteRanges|DESTINATION_TRASH|showMoveByChannelDialog|getUserPlaylists|aggregateChannelsFromPlaylistItems|filterPlaylistItemsToMove|getSourcePlaylistChannels|moveVideosByChannel)$",
+          "argsIgnorePattern": "^_"
+        }
+      ],
+      "no-undef": "error"
+    }
+  },
+  {
+    files: ["tests/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: {
         require: "readonly",
+        module: "readonly",
         describe: "readonly",
         it: "readonly",
         expect: "readonly",
@@ -42,16 +69,14 @@ module.exports = [
         global: "readonly"
       }
     },
-    plugins: {
-      googleappsscript: pluginGoogleappsscript
-    },
     rules: {
+      "no-var": "error",
+      "prefer-const": "error",
       "no-unused-vars": [
         "error",
         {
           "vars": "local",
           "args": "after-used",
-          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|SHEET_HISTORY|isQuotaExceededError|getDeleteRanges|DESTINATION_TRASH|showMoveByChannelDialog|getUserPlaylists|aggregateChannelsFromPlaylistItems|filterPlaylistItemsToMove|getSourcePlaylistChannels|moveVideosByChannel)$",
           "argsIgnorePattern": "^_"
         }
       ],

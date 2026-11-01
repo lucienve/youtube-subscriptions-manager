@@ -104,7 +104,7 @@ function checkNewVideos() {
 
     // --- RSS SCANNING ---
     const BATCH_SIZE = 20; 
-    let potentialVideos = [];
+    const potentialVideos = [];
     const seenScanVideoIds = new Set();
     let newestSeenDate = null;
     

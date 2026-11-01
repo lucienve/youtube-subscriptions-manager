@@ -46,8 +46,8 @@ function processSelectedVideos() {
     let videosAdded = 0;
     let videosDiscarded = 0;
     let videosFailed = 0;
-    let historyLog = [];
-    let rowsToDelete = [];
+    const historyLog = [];
+    const rowsToDelete = [];
     let quotaHit = false;
 
     ss.toast('Processing videos...', 'Step 1/1');

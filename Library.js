@@ -54,8 +54,8 @@ function refreshPlaylistConfig(settingsSheet, options) {
     return {};
   }
 
-  let map = {};
-  let missingIds = [];
+  const map = {};
+  const missingIds = [];
 
   for (let i = headerIndex + 1; i < data.length; i++) {
     const name = String(data[i][0] || '').trim();
@@ -143,7 +143,7 @@ function addToPlaylist(playlistId, videoId) {
  * @return {Array<string>|null} - Array of Channel IDs or null on failure.
  */
 function getAllSubscriptions() {
-  let channels = [];
+  const channels = [];
   let pageToken = '';
   try {
     do {
