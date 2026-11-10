@@ -26,10 +26,8 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Push code using clasp (Personal Project)
-        uses: lucienve/clasp-action@v1
+        uses: lucienve/clasp-action@v2
         with:
-          accessToken: ${{ secrets.ACCESS_TOKEN }}
-          idToken: ${{ secrets.ID_TOKEN }}
           refreshToken: ${{ secrets.REFRESH_TOKEN }}
           clientId: ${{ secrets.CLIENT_ID }}
           clientSecret: ${{ secrets.CLIENT_SECRET }}
@@ -38,10 +36,8 @@ jobs:
 
       - name: Push code using clasp (Template Project)
         if: ${{ env.TEMPLATE_SCRIPT_ID != '' }}
-        uses: lucienve/clasp-action@v1
+        uses: lucienve/clasp-action@v2
         with:
-          accessToken: ${{ secrets.ACCESS_TOKEN }}
-          idToken: ${{ secrets.ID_TOKEN }}
           refreshToken: ${{ secrets.REFRESH_TOKEN }}
           clientId: ${{ secrets.CLIENT_ID }}
           clientSecret: ${{ secrets.CLIENT_SECRET }}
