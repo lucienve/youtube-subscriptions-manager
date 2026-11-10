@@ -35,6 +35,11 @@ bucketing, and allows the user to process them into playlists.
   set a destination playlist (or the special 'Trash' destination to remove from
   source without re-adding), configure a batch size cap (default 50), and
   move/remove matching videos with clear quota budgeting and feedback.
+- **User-Friendly Overnight Maintenance Alert:** Clear, non-technical alert
+  dialog when YouTube's feed servers return 404 or 500 during routine
+  maintenance windows, localizing the expected outage timeframe (8 PM to 7 AM
+  ET) to the user's spreadsheet timezone while preserving strict abort
+  guarantees.
 
 ## Architectural Decisions
 
@@ -50,6 +55,15 @@ bucketing, and allows the user to process them into playlists.
   XML structure, or unparseable timestamp during RSS feed scanning aborts the
   entire fetch run without advancing `Last Run Time`, guaranteeing no videos are
   permanently missed.
+- **Nightly RSS Maintenance & Fail-Closed Safety:** YouTube's legacy Atom/RSS
+  feed infrastructure regularly experiences overnight maintenance and server
+  timeouts between roughly 8 PM and 7 AM ET, producing intermittent HTTP 404
+  and 500 responses on origin cache misses. The fetch workflow maintains strict
+  fail-closed safety by aborting immediately without updating `Last Run Time`
+  so no published videos are ever missed. The user-facing error dialog presents
+  a friendly, localized maintenance message (`formatFetchErrorAlert` and
+  `formatMaintenanceWindow`) while preserving detailed technical logs in
+  `console.error`.
 - **Timestamp & Timezone Safety:** `Last Run Time` is formatted and parsed
   using the spreadsheet's timezone with an ISO-8601 offset
   (`"yyyy-MM-dd'T'HH:mm:ssXXX"`), ensuring DST transitions or differences

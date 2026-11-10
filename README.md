@@ -231,6 +231,14 @@ Similarly, the "Move Videos by Channel" feature enforces batch caps and quota
 warnings to prevent unexpected quota exhaustion. If you hit your daily limit,
 simply wait until the quota resets the next day.
 
+### Overnight Maintenance Window
+
+YouTube's servers routinely undergo maintenance and temporary slowdowns during
+the late evening and overnight hours (roughly 8 PM to 7 AM ET). If you run
+**Check New Videos** during this window and see a message that YouTube's servers
+are temporarily down, do not worry—nothing is broken, and no videos are missed.
+Simply try checking again in the morning.
+
 ---
 
 ## 📝 License

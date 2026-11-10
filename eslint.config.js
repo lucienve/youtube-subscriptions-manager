@@ -33,6 +33,8 @@ module.exports = [
         filterPlaylistItemsToMove: "readonly",
         getSourcePlaylistChannels: "readonly",
         moveVideosByChannel: "readonly",
+        formatMaintenanceWindow: "readonly",
+        formatFetchErrorAlert: "readonly",
         module: "readonly"
       }
     },
@@ -47,7 +49,7 @@ module.exports = [
         {
           "vars": "local",
           "args": "after-used",
-          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|SHEET_HISTORY|isQuotaExceededError|getDeleteRanges|DESTINATION_TRASH|showMoveByChannelDialog|getUserPlaylists|aggregateChannelsFromPlaylistItems|filterPlaylistItemsToMove|getSourcePlaylistChannels|moveVideosByChannel)$",
+          "varsIgnorePattern": "^(_|onOpen|checkNewVideos|processSelectedVideos|showDeduplicateDialog|getPlaylistNames|deduplicatePlaylist|refreshPlaylistConfig|addToPlaylist|getAllSubscriptions|parseDuration|escapeFormula|getSettingValue|setSettingValue|buildPredictionModel|predictPlaylist|getDurationBucket|getKeywords|SHEET_VIDEOS|SHEET_SETTINGS|SHEET_HISTORY|isQuotaExceededError|getDeleteRanges|DESTINATION_TRASH|showMoveByChannelDialog|getUserPlaylists|aggregateChannelsFromPlaylistItems|filterPlaylistItemsToMove|getSourcePlaylistChannels|moveVideosByChannel|formatMaintenanceWindow|formatFetchErrorAlert)$",
           "argsIgnorePattern": "^_"
         }
       ],
@@ -65,8 +67,10 @@ module.exports = [
         it: "readonly",
         expect: "readonly",
         beforeEach: "readonly",
+        afterEach: "readonly",
         jest: "readonly",
-        global: "readonly"
+        global: "readonly",
+        console: "readonly"
       }
     },
     rules: {

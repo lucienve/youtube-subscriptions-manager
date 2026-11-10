@@ -128,9 +128,10 @@ function checkNewVideos() {
           const response = responses[j];
 
           if (response.getResponseCode() !== 200) {
-            const errMsg = `HTTP Error ${response.getResponseCode()} fetching feed for channel ${batch[j]}. Scan aborted.`;
+            const statusCode = response.getResponseCode();
+            const errMsg = `HTTP Error ${statusCode} fetching feed for channel ${batch[j]}. Scan aborted.`;
             console.error(errMsg);
-            SpreadsheetApp.getUi().alert('Fetch Error: ' + errMsg);
+            SpreadsheetApp.getUi().alert(formatFetchErrorAlert(statusCode, ss.getSpreadsheetTimeZone()));
             return;
           }
 
@@ -305,4 +306,56 @@ function checkNewVideos() {
       lock.releaseLock();
     }
   }
+}
+
+/**
+ * Formats the widest expected overnight maintenance window into the given timezone.
+ *
+ * @param {string} [timeZone] - The IANA timezone string (e.g., 'America/New_York').
+ * @return {string} Formatted time window (e.g., '8 PM to 7 AM EST' or '8 PM to 7 AM ET').
+ */
+function formatMaintenanceWindow(timeZone) {
+  if (!timeZone || typeof timeZone !== 'string' || !timeZone.trim()) {
+    return '8 PM to 7 AM ET';
+  }
+  try {
+    const dStart = new Date('2026-01-15T01:00:00Z');
+    const dEnd = new Date('2026-01-15T12:00:00Z');
+    const tz = timeZone.trim();
+    const formatterHour = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric'
+    });
+    const formatterTz = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric',
+      timeZoneName: 'short'
+    });
+    return `${formatterHour.format(dStart)} to ${formatterTz.format(dEnd)}`;
+  } catch {
+    return '8 PM to 7 AM ET';
+  }
+}
+
+/**
+ * Returns a user-friendly alert message for RSS fetch failures.
+ *
+ * @param {number} statusCode - HTTP status code from the fetch response.
+ * @param {string} [timeZone] - The IANA timezone string.
+ * @return {string} User-facing alert message.
+ */
+function formatFetchErrorAlert(statusCode, timeZone) {
+  if (statusCode === 404 || (typeof statusCode === 'number' && statusCode >= 500)) {
+    const windowStr = formatMaintenanceWindow(timeZone);
+    return `YouTube servers appear to be undergoing routine overnight maintenance (typically ${windowStr}). No videos were missed. Please try checking again later.`;
+  }
+  return `Unable to check for new videos right now (Error ${statusCode}). Please try again later.`;
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = {
+    checkNewVideos,
+    formatMaintenanceWindow,
+    formatFetchErrorAlert
+  };
 }
